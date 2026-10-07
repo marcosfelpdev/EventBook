@@ -1,186 +1,201 @@
-# EventBook
+# 🎟️ EventBook
 
-Plataforma de venda de ingressos para eventos. Organizadores criam eventos e lotes, compradores reservam e pagam (checkout simulado), e a equipe valida a entrada por check-in, tudo com proteção contra overselling e regras de negócio documentadas.
+**Plataforma de venda de ingressos para eventos**, com reserva temporária, checkout atômico e check-in na porta, construída com foco em **consistência de dados** e **regras de negócio testadas**.
 
-## Stack
+Organizadores criam eventos e lotes. Compradores reservam e pagam (checkout simulado). A equipe valida a entrada por código. Em todo o fluxo, o sistema impede a venda de mais ingressos do que o estoque, mesmo sob requisições simultâneas.
 
-| Camada | Tecnologias |
+---
+
+## Sumário
+
+- [Funcionalidades](#funcionalidades)
+- [Arquitetura](#arquitetura)
+- [Stack e decisões técnicas](#stack-e-decisões-técnicas)
+- [Regras de negócio](#regras-de-negócio)
+- [Perfis de usuário](#perfis-de-usuário)
+- [Roadmap](#roadmap)
+- [Como rodar](#como-rodar)
+- [Testes](#testes)
+- [Estrutura do repositório](#estrutura-do-repositório)
+- [Como contribuir](#como-contribuir)
+- [Documentação](#documentação)
+
+---
+
+## Funcionalidades
+
+| Para quem | O que faz |
 |---|---|
-| API | Node.js, TypeScript, Express, Zod, JWT |
-| Banco | MySQL 8, Prisma ORM |
-| Front-end | React, Vite, TypeScript, Tailwind CSS |
-| Testes | Vitest, Supertest, Testing Library, Playwright (E2E) |
-| Infra | Docker, Docker Compose, GitHub Actions |
+| **Comprador** | Vê a vitrine de eventos, escolhe lotes, reserva ingressos por 15 minutos, paga, consulta "Meus Ingressos" e cancela dentro do prazo |
+| **Organizador** | Cria e publica eventos, define lotes e capacidade, monta a equipe e acompanha a ocupação em tempo real |
+| **Staff** | Valida ingressos na entrada digitando o código, com retorno claro de permitido, duplicado ou recusado |
 
-## Estrutura
+## Arquitetura
 
+Monorepo com duas aplicações e um banco, orquestrados por Docker Compose. A API segue camadas simples: cada requisição passa por middlewares, controllers, services (onde ficam as regras) e Prisma.
+
+```mermaid
+flowchart LR
+    Web["Web<br/>React + Vite"] -->|HTTP / JSON| MW
+    subgraph API["API · Node.js + Express"]
+        MW["Middlewares<br/>auth, RBAC, Zod"] --> CT["Controllers"]
+        CT --> SV["Services<br/>regras de negócio"]
+        SV --> PR["Prisma Client"]
+        JOB["Job de expiração"] --> PR
+    end
+    PR --> DB[("MySQL 8")]
 ```
-eventbook/
-├── api/    # Back-end (Express + Prisma)
-├── web/    # Front-end (React + Vite)
-├── docs/   # Regras de negócio, ERD, perfis, convenções, ADRs
-└── .github/
-```
 
-## Documentação
+Princípios adotados:
 
-- [Regras de negócio (RN-01 a RN-10)](docs/regras-de-negocio.md)
-- [Modelo de dados (ERD)](docs/erd.md)
-- [Perfis e permissões](docs/perfis-e-permissoes.md)
-- [Convenções do projeto](docs/convencoes.md)
+- **Módulos por domínio.** Cada módulo (`auth`, `events`, `lots`, `orders`...) mantém rota, controller, service e schema juntos.
+- **Regras críticas isoladas.** Estoque, checkout e janela de check-in ficam em arquivos próprios, fáceis de testar e revisar.
+- **Autorização em dois níveis.** Perfil (RBAC) no middleware e propriedade do recurso no service.
+- **Erros padronizados.** Toda falha da API responde `{ code, message, details }`.
+- **Datas em UTC.** A conversão para o fuso do usuário acontece só na interface.
 
-## Pré-requisitos
+## Stack e decisões técnicas
 
-- Node.js 22 LTS ou superior (`node -v`)
-- npm 10+ (`npm -v`)
-- Docker e Docker Compose (`docker --version` e `docker compose version`)
-- Git
+| Camada | Tecnologia | Por que foi escolhida |
+|---|---|---|
+| Linguagem | **TypeScript** (`strict`) | Tipagem de ponta a ponta reduz erros em regras com muitos estados (pedido, ticket, check-in) |
+| API | **Node.js + Express** | Simples, amplamente conhecido e suficiente para uma API REST bem estruturada |
+| Validação | **Zod** | Valida payloads e variáveis de ambiente com o mesmo esquema que gera os tipos |
+| Autenticação | **JWT + bcryptjs** | Autenticação sem estado, adequada para API e SPA. O `bcryptjs` evita compilação nativa, o que facilita no Windows |
+| Banco | **MySQL 8** | Banco relacional com transações e locks, necessários para impedir overselling e garantir o checkout atômico |
+| ORM | **Prisma** | Schema declarativo, migrations versionadas e transações com tipagem |
+| Front-end | **React + Vite** | Desenvolvimento rápido com hot reload e build enxuto |
+| Estilização | **Tailwind CSS** | Velocidade para montar telas e estados de interface consistentes |
+| Testes | **Vitest, Supertest, Testing Library, Playwright** | Unidade e integração com a mesma ferramenta, mais E2E do fluxo principal |
+| Infra | **Docker Compose** | Um comando sobe front, API e banco, com o mesmo ambiente para todos |
+| CI/CD | **GitHub Actions** | Lint, typecheck, build e testes em toda PR, com a `main` protegida |
 
-## Setup do ambiente (M01)
+> **Versões fixadas:** TypeScript em `~5.9` (compatibilidade com o `typescript-eslint`) e Prisma em `6`.
 
-### 1. Estrutura inicial
+## Regras de negócio
+
+As 10 regras (RN-01 a RN-10) guiam o desenvolvimento e cada uma tem teste automatizado. Resumo:
+
+| RN | Regra |
+|---|---|
+| RN-01 | Evento passado não pode ser editado, e evento sem lotes não pode ser publicado |
+| RN-02 | Só se reserva dentro da janela de venda do lote, respeitando o estoque remanescente |
+| RN-03 | Nunca vender acima do estoque, mesmo com requisições concorrentes (409) |
+| RN-04 | Reserva expira em 15 minutos e devolve o estoque |
+| RN-05 | Checkout atômico: pedido pago e tickets gerados juntos, ou nada |
+| RN-06 | Cancelamento bloqueado a menos de 12h do evento |
+| RN-07 | Check-in só para ticket existente, do evento correto e ainda não usado |
+| RN-08 | Check-in permitido de 2h antes do início até o fim do evento |
+| RN-09 | O preço do lote é gravado no pedido no momento da reserva |
+| RN-10 | Números de ocupação calculados por agregação no banco |
+
+Detalhes e critérios de aceite em [`docs/regras-de-negocio.md`](docs/regras-de-negocio.md).
+
+## Perfis de usuário
+
+| Perfil | Papel |
+|---|---|
+| `BUYER` | Compra ingressos. É o perfil de todo cadastro público |
+| `ORGANIZER` | Gerencia os próprios eventos, lotes, equipe e ocupação |
+| `STAFF` | Faz check-in nos eventos aos quais está vinculado |
+| `ADMIN` | Reservado para evolução futura |
+
+Matriz completa por endpoint em [`docs/perfis-e-permissoes.md`](docs/perfis-e-permissoes.md).
+
+## Roadmap
+
+O desenvolvimento segue milestones, cada uma com issues atômicas no GitHub Projects e o fluxo `Issue → Branch → Commit → PR → Review → Merge`.
+
+| Milestone | Escopo | Status |
+|---|---|---|
+| M01 | Fundação, infraestrutura, CI e testes | 🚧 Em andamento |
+| M02 | Autenticação e perfis (RBAC) | 🚧 API pronta, interface pendente |
+| M03 | Gestão de eventos | ⏳ Planejada |
+| M04 | Lotes e capacidade | ⏳ Planejada |
+| M05 | Pedido e reserva temporária | ⏳ Planejada |
+| M06 | Checkout atômico e cancelamento | ⏳ Planejada |
+| M07 | Staff e check-in | ⏳ Planejada |
+| M08 | Ocupação | ⏳ Planejada |
+| M09 | Hardening e release | ⏳ Planejada |
+
+**Endpoints disponíveis hoje**
+
+| Método | Rota | Acesso |
+|---|---|---|
+| `GET` | `/health` | Público |
+| `POST` | `/register` | Público |
+| `POST` | `/login` | Público |
+| `GET` | `/me` | Autenticado |
+
+## Como rodar
+
+**Pré-requisitos:** Node.js 22 LTS ou superior, Docker com Compose e Git.
 
 ```bash
-mkdir eventbook && cd eventbook
-git init
-mkdir api web docs
+# 1. Banco de dados
+docker compose up -d mysql
+
+# 2. API
+cd api
+cp .env.example .env          # ajuste DATABASE_URL, JWT_SECRET e SEED_PASSWORD
+npm install
+npx prisma migrate dev
+npm run db:seed
+npm run dev                   # http://localhost:3333
+
+# 3. Front-end (em outro terminal)
+cd web
+npm install
+npm run dev                   # http://localhost:5173
 ```
 
-### 2. API
+Usuários criados pelo seed (a senha é a definida em `SEED_PASSWORD`):
+
+| Perfil | E-mail |
+|---|---|
+| ADMIN | `admin@eventbook.test` |
+| ORGANIZER | `organizer@eventbook.test` |
+| STAFF | `staff@eventbook.test` |
+| BUYER | `buyer@eventbook.test` |
+
+O passo a passo completo de instalação, com todos os comandos e configurações, está em [`docs/setup-ambiente.md`](docs/setup-ambiente.md).
+
+## Testes
 
 ```bash
 cd api
-npm init -y
-
-# Dependências de produção
-npm install express dotenv zod
-
-# Dependências de desenvolvimento
-npm install -D typescript@~5.9 tsx @types/node @types/express
-
-# Lint e formatação
-npm install -D eslint @eslint/js typescript-eslint globals prettier eslint-config-prettier
-
-# Prisma (versão 6) e cliente
-npm install @prisma/client@6
-npm install -D prisma@6
-npx prisma init --datasource-provider mysql
-
-# Testes
-npm install -D vitest supertest @types/supertest
-
-# TypeScript
-npx tsc --init
+npm run lint && npm run typecheck
+npm test
 ```
 
-Scripts do `api/package.json`:
+Os testes de integração rodam contra um banco isolado (`eventbook_test`), configurado em `api/.env.test`. As regras mais sensíveis têm testes dedicados: concorrência do overselling (RN-03), rollback do checkout (RN-05) e bordas de horário (RN-02, RN-06 e RN-08).
 
-```json
-"scripts": {
-  "dev": "tsx watch src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "typecheck": "tsc --noEmit",
-  "lint": "eslint .",
-  "format": "prettier --write .",
-  "test": "vitest run"
-}
-```
-
-`tsconfig.json` (opções principais):
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "commonjs",
-    "rootDir": "src",
-    "outDir": "dist",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  },
-  "include": ["src"]
-}
-```
-
-`eslint.config.mjs`:
-
-```js
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import prettier from 'eslint-config-prettier';
-import globals from 'globals';
-
-export default tseslint.config(
-  { ignores: ['dist', 'node_modules'] },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  prettier,
-  { languageOptions: { globals: globals.node } },
-);
-```
-
-> **Nota:** o TypeScript está fixado em `~5.9` porque o `typescript-eslint` ainda não aceita o TypeScript 7 (peer dependency `<6.1.0`). Atualize a fixação quando o `typescript-eslint` passar a suportar versões mais novas.
-
-### 3. Front-end
-
-```bash
-cd ../web
-npm create vite@latest . -- --template react-ts
-npm install
-npm install -D typescript@~5.9   # compatível com typescript-eslint
-
-# Estilização (Tailwind CSS)
-npm install tailwindcss @tailwindcss/vite
-
-# Formatação (o Vite já traz o ESLint configurado)
-npm install -D prettier eslint-config-prettier
-
-# Testes
-npm install -D vitest jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event
-```
-
-Para ativar o Tailwind, adicione o plugin em `vite.config.ts` (`import tailwindcss from '@tailwindcss/vite'` e `plugins: [react(), tailwindcss()]`) e coloque `@import "tailwindcss";` no `src/index.css`.
-
-### 4. Banco de dados com Docker
-
-```bash
-cd ..
-cp .env.example .env
-docker compose up -d mysql
-```
-
-Variáveis principais do `.env.example`:
+## Estrutura do repositório
 
 ```
-MYSQL_ROOT_PASSWORD=change-me
-MYSQL_DATABASE=eventbook
-DATABASE_URL="mysql://root:change-me@localhost:3306/eventbook"
-PORT=3333
+eventbook/
+├── api/        # Back-end: Express, Prisma, testes
+├── web/        # Front-end: React, Vite
+├── docs/       # Regras de negócio, ERD, perfis, convenções, setup
+├── e2e/        # Testes ponta a ponta (a partir da M09)
+└── .github/    # CI, templates de issue e PR, CODEOWNERS
 ```
 
-### 5. Verificação
+## Como contribuir
 
-```bash
-cd api && npm run lint && npm run typecheck && npm test
-cd ../web && npm run lint && npm run build
-```
+1. Escolha uma issue em *Ready* no board do projeto.
+2. Crie a branch no formato `tipo/numero-descricao`, por exemplo `feat/42-post-orders`.
+3. Faça commits no padrão Conventional Commits (`feat(api): add POST /orders`).
+4. Abra a PR com `Closes #<issue>`, com o CI verde e pelo menos 1 aprovação.
 
-## Milestones
+Todas as convenções estão em [`docs/convencoes.md`](docs/convencoes.md).
 
-| Milestone | Escopo |
+## Documentação
+
+| Documento | Conteúdo |
 |---|---|
-| M01 | Fundação, infraestrutura, CI e testes |
-| M02 | Autenticação e perfis (RBAC) |
-| M03 | Gestão de eventos |
-| M04 | Lotes e capacidade |
-| M05 | Pedido e reserva temporária |
-| M06 | Checkout atômico e cancelamento |
-| M07 | Staff e check-in |
-| M08 | Ocupação |
-| M09 | Hardening e release |
-
-## Contribuindo
-
-Siga o fluxo `Issue → Branch → Commit → PR → Review → Merge` descrito em [convenções](docs/convencoes.md). Esta documentação evolui junto com o código: toda mudança de regra ou de contrato atualiza os documentos em `docs/`.
+| [Regras de negócio](docs/regras-de-negocio.md) | RN-01 a RN-10 com critérios de aceite |
+| [Modelo de dados](docs/erd.md) | ERD, tabelas por milestone e restrições |
+| [Perfis e permissões](docs/perfis-e-permissoes.md) | Matriz de acesso por endpoint |
+| [Convenções](docs/convencoes.md) | Branches, commits, PRs, formato de erros e Definition of Done |
+| [Setup do ambiente](docs/setup-ambiente.md) | Instalação e configuração passo a passo |
