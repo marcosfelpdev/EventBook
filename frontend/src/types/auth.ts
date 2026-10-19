@@ -8,7 +8,7 @@ export const ROLES: Record<Role, Role> = {
 };
 
 export interface User {
-  id: string;
+  id: number | string;
   name?: string;
   email: string;
   role: Role;
