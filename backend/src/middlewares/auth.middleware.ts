@@ -34,6 +34,29 @@ export const authenticate: RequestHandler = (req, _res, next) => {
   }
 };
 
+export const optionalAuthenticate: RequestHandler = (req, _res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+    req.user = {
+      id: Number(decoded.sub),
+      role: decoded.role,
+    };
+  } catch {
+    // Se o token for inválido em rota opcional, segue sem usuário autenticado
+  }
+
+  next();
+};
+
 export function authorize(...allowedRoles: Role[]): RequestHandler {
   return (req, _res, next) => {
     if (!req.user) {
