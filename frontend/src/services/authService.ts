@@ -17,7 +17,7 @@ export interface AuthResponse {
   user: User;
 }
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export async function login(data: LoginPayload): Promise<AuthResponse> {
   if (USE_MOCK) {
@@ -65,8 +65,8 @@ export async function register(data: RegisterPayload): Promise<AuthResponse> {
     };
   }
 
-  const response = await api.post<AuthResponse>('/register', data);
-  return response.data;
+  await api.post<User>('/register', data);
+  return login({ email: data.email, password: data.password });
 }
 
 export async function getMe(): Promise<User> {
