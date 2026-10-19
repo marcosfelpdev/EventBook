@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface EmptyStateProps {
   title?: string;
   description?: string;
@@ -7,40 +5,25 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
-  title = 'Nenhum registo encontrado',
+export function EmptyState({
+  title = 'Nenhum registro encontrado',
   description = 'Não existem dados disponíveis para apresentar neste momento.',
   actionLabel,
   onAction,
-}) => {
+}: EmptyStateProps) {
   return (
-    <div
-      style={{
-        textAlign: 'center',
-        padding: '40px 24px',
-        border: '1px dashed #d1d5db',
-        borderRadius: '8px',
-        backgroundColor: '#f9fafb',
-        color: '#374151',
-      }}
-    >
-      <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>{title}</h3>
-      <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#6b7280' }}>{description}</p>
+    <div className="text-center py-10 px-6 border border-dashed border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-sm text-slate-500 mb-4">{description}</p>
       {actionLabel && onAction && (
         <button
+          type="button"
           onClick={onAction}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#2563eb',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
         >
           {actionLabel}
         </button>
       )}
     </div>
   );
-};
+}

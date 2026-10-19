@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import type { ApiError } from '../services/api';
 
-export const LoginPage: React.FC = () => {
+export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -13,110 +13,115 @@ export const LoginPage: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 1. Validação de campos no Frontend
-  const validateForm = (): boolean => {
+  function validateForm(): boolean {
     const errors: { email?: string; password?: string } = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!email.trim()) {
       errors.email = 'O e-mail é obrigatório.';
     } else if (!emailRegex.test(email)) {
-      errors.email = 'Introduza um e-mail válido.';
+      errors.email = 'Digite um e-mail válido.';
     }
 
     if (!password) {
-      errors.password = 'A palavra-passe é obrigatória.';
+      errors.password = 'A senha é obrigatória.';
     } else if (password.length < 6) {
-      errors.password = 'A palavra-passe deve ter pelo menos 6 caracteres.';
+      errors.password = 'A senha deve ter pelo menos 6 caracteres.';
     }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setApiError(null);
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
     try {
       const loggedUser = await login({ email, password });
 
-      // 3. Redirecionamento após sucesso (de acordo com o perfil/Role)
       if (loggedUser.role === 'ADMIN' || loggedUser.role === 'ORGANIZER') {
         navigate('/dashboard');
-      } else if (loggedUser.role === 'STAFF') {
+        return;
+      }
+
+      if (loggedUser.role === 'STAFF') {
         navigate('/checkin');
-      } else {
-        navigate('/events');
+        return;
       }
-    } catch (err) {
-      // 2. Exibição de erros vindos da API
+
+      navigate('/events');
+    } catch (err: unknown) {
       const error = err as ApiError;
-      setApiError(error.message || 'Erro ao efetuar login.');
-      if (error.errors) {
-        setFieldErrors({
-          email: error.errors.email?.[0],
-          password: error.errors.password?.[0],
-        });
-      }
+      setApiError(error.message || 'Erro ao realizar login.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: '400px', margin: '60px auto', padding: '24px', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <h2>Entrar no EventBook</h2>
+    <div className="max-w-md mx-auto my-14 p-6 bg-white border border-slate-200 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">Entrar no EventBook</h2>
 
-      {/* Exibição do erro vindo da API */}
       {apiError && (
-        <div role="alert" style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+        <div role="alert" className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm border border-red-200">
           {apiError}
         </div>
       )}
 
       <form onSubmit={handleSubmit} noValidate>
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '4px' }}>E-mail</label>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+            E-mail
+          </label>
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="seu@email.com"
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            className="w-full px-3 py-2 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '12px' }}>{fieldErrors.email}</span>}
+          {fieldErrors.email && <span className="text-red-600 text-xs mt-1 block">{fieldErrors.email}</span>}
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '4px' }}>Palavra-passe</label>
+        <div className="mb-6">
+          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+            Senha
+          </label>
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••"
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            className="w-full px-3 py-2 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {fieldErrors.password && <span style={{ color: '#dc2626', fontSize: '12px' }}>{fieldErrors.password}</span>}
+          {fieldErrors.password && (
+            <span className="text-red-600 text-xs mt-1 block">{fieldErrors.password}</span>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          style={{ width: '100%', padding: '10px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          className="w-full py-2.5 px-4 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          {isLoading ? 'A entrar...' : 'Entrar'}
+          {isLoading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
 
-      <p style={{ marginTop: '16px', fontSize: '14px', textAlign: 'center' }}>
-        Ainda não tem conta? <Link to="/register">Registe-se aqui</Link>
+      <p className="mt-4 text-sm text-slate-600 text-center">
+        Ainda não tem conta?{' '}
+        <Link to="/register" className="text-blue-600 hover:underline">
+          Cadastre-se aqui
+        </Link>
       </p>
     </div>
   );
-};
+}

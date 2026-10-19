@@ -1,21 +1,9 @@
-:root {
-  --text: #374151;
-  --text-h: #111827;
-  --bg: #f9fafb;
-  --border: #e5e7eb;
-  --accent: #2563eb;
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-}
+@import "tailwindcss";
 
 body {
   margin: 0;
-  font-family: var(--sans);
-  background-color: var(--bg);
-  color: var(--text);
+  background-color: #f8fafc;
+  color: #0f172a;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -24,4 +12,3 @@ body {
   display: flex;
   flex-direction: column;
 }
-@import "tailwindcss";

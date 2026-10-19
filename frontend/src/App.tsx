@@ -1,20 +1,30 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { PrivateRoute } from './components/PrivateRoute';
 import { EmptyState } from './components/EmptyState';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ROLES } from './types/auth';
 
-const EventsPage = () => {
+function EventsPage() {
   const { user, logout } = useAuth();
+
   return (
-    <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1>Catálogo de Eventos</h1>
-        <div>
-          <span style={{ marginRight: '12px' }}>Olá, <strong>{user?.name}</strong> ({user?.role})</span>
-          <button onClick={logout} style={{ padding: '6px 12px', cursor: 'pointer' }}>Sair</button>
+    <div className="max-w-4xl mx-auto my-10 p-6">
+      <header className="flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
+        <h1 className="text-2xl font-bold text-slate-800">Catálogo de Eventos</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-slate-600">
+            Olá, <strong className="text-slate-800">{user?.name}</strong> ({user?.role})
+          </span>
+          <button
+            type="button"
+            onClick={logout}
+            className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 border border-slate-300 rounded hover:bg-slate-200 transition-colors"
+          >
+            Sair
+          </button>
         </div>
       </header>
       <EmptyState
@@ -23,7 +33,7 @@ const EventsPage = () => {
       />
     </div>
   );
-};
+}
 
 export function App() {
   return (
@@ -33,7 +43,6 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Qualquer utilizador autenticado pode ver eventos */}
           <Route
             path="/events"
             element={
@@ -43,22 +52,24 @@ export function App() {
             }
           />
 
-          {/* Apenas ADMIN e ORGANIZER podem aceder ao Dashboard */}
           <Route
             path="/dashboard"
             element={
               <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.ORGANIZER]}>
-                <h1 style={{ textAlign: 'center', marginTop: '50px' }}>Painel do Organizador / Admin</h1>
+                <h1 className="text-center text-2xl font-bold text-slate-800 mt-12">
+                  Painel do Organizador / Admin
+                </h1>
               </PrivateRoute>
             }
           />
 
-          {/* Apenas STAFF e ADMIN podem aceder ao Check-in */}
           <Route
             path="/checkin"
             element={
               <PrivateRoute allowedRoles={[ROLES.STAFF, ROLES.ADMIN]}>
-                <h1 style={{ textAlign: 'center', marginTop: '50px' }}>Área de Staff / Check-in</h1>
+                <h1 className="text-center text-2xl font-bold text-slate-800 mt-12">
+                  Área de Staff / Check-in
+                </h1>
               </PrivateRoute>
             }
           />
@@ -69,5 +80,3 @@ export function App() {
     </AuthProvider>
   );
 }
-
-export default App;

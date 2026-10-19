@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import type { ApiError } from '../services/api';
 
-export const RegisterPage: React.FC = () => {
+export function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -21,8 +21,7 @@ export const RegisterPage: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 1. Validação de campos
-  const validateForm = (): boolean => {
+  function validateForm(): boolean {
     const errors: typeof fieldErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -33,125 +32,133 @@ export const RegisterPage: React.FC = () => {
     if (!email.trim()) {
       errors.email = 'O e-mail é obrigatório.';
     } else if (!emailRegex.test(email)) {
-      errors.email = 'Introduza um e-mail válido.';
+      errors.email = 'Digite um e-mail válido.';
     }
 
     if (!password) {
-      errors.password = 'A palavra-passe é obrigatória.';
+      errors.password = 'A senha é obrigatória.';
     } else if (password.length < 6) {
-      errors.password = 'A palavra-passe deve ter pelo menos 6 caracteres.';
+      errors.password = 'A senha deve ter pelo menos 6 caracteres.';
     }
 
     if (confirmPassword !== password) {
-      errors.confirmPassword = 'As palavras-passe não coincidem.';
+      errors.confirmPassword = 'As senhas não coincidem.';
     }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setApiError(null);
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsLoading(true);
     try {
       await register({ name, email, password });
-      // 3. Redirecionamento após sucesso
       navigate('/events');
-    } catch (err) {
-      // 2. Exibição de erros vindos da API (ex: 409 e-mail já registado)
+    } catch (err: unknown) {
       const error = err as ApiError;
       setApiError(error.message || 'Erro ao criar conta.');
-      if (error.errors) {
-        setFieldErrors({
-          name: error.errors.name?.[0],
-          email: error.errors.email?.[0],
-          password: error.errors.password?.[0],
-        });
-      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: '400px', margin: '60px auto', padding: '24px', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <h2>Criar Conta - EventBook</h2>
+    <div className="max-w-md mx-auto my-14 p-6 bg-white border border-slate-200 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">Criar Conta - EventBook</h2>
 
       {apiError && (
-        <div role="alert" style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+        <div role="alert" className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm border border-red-200">
           {apiError}
         </div>
       )}
 
       <form onSubmit={handleSubmit} noValidate>
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '4px' }}>Nome completo</label>
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+            Nome completo
+          </label>
           <input
             id="name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="O seu nome"
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            placeholder="Seu nome"
+            className="w-full px-3 py-2 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {fieldErrors.name && <span style={{ color: '#dc2626', fontSize: '12px' }}>{fieldErrors.name}</span>}
+          {fieldErrors.name && <span className="text-red-600 text-xs mt-1 block">{fieldErrors.name}</span>}
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '4px' }}>E-mail</label>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+            E-mail
+          </label>
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="seu@email.com"
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            className="w-full px-3 py-2 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '12px' }}>{fieldErrors.email}</span>}
+          {fieldErrors.email && <span className="text-red-600 text-xs mt-1 block">{fieldErrors.email}</span>}
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: '4px' }}>Palavra-passe</label>
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+            Senha
+          </label>
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mínimo 6 caracteres"
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            className="w-full px-3 py-2 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {fieldErrors.password && <span style={{ color: '#dc2626', fontSize: '12px' }}>{fieldErrors.password}</span>}
+          {fieldErrors.password && (
+            <span className="text-red-600 text-xs mt-1 block">{fieldErrors.password}</span>
+          )}
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '4px' }}>Confirmar Palavra-passe</label>
+        <div className="mb-6">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">
+            Confirmar Senha
+          </label>
           <input
             id="confirmPassword"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Repita a palavra-passe"
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            placeholder="Repita a senha"
+            className="w-full px-3 py-2 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {fieldErrors.confirmPassword && <span style={{ color: '#dc2626', fontSize: '12px' }}>{fieldErrors.confirmPassword}</span>}
+          {fieldErrors.confirmPassword && (
+            <span className="text-red-600 text-xs mt-1 block">{fieldErrors.confirmPassword}</span>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          style={{ width: '100%', padding: '10px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          className="w-full py-2.5 px-4 bg-green-600 text-white font-medium rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
         >
-          {isLoading ? 'A registar...' : 'Criar Conta'}
+          {isLoading ? 'Cadastrando...' : 'Criar Conta'}
         </button>
       </form>
 
-      <p style={{ marginTop: '16px', fontSize: '14px', textAlign: 'center' }}>
-        Já possui uma conta? <Link to="/login">Inicie sessão</Link>
+      <p className="mt-4 text-sm text-slate-600 text-center">
+        Já possui uma conta?{' '}
+        <Link to="/login" className="text-blue-600 hover:underline">
+          Faça login
+        </Link>
       </p>
     </div>
   );
-};
+}
