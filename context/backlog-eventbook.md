@@ -93,62 +93,62 @@ Cada `###` é uma Issue do GitHub. As tarefas com `- [ ]` viram checkboxes clic�
 ## 🔐 M02: Autenticação e Perfis (RBAC)
 
 ### [DB] Criar schema de users e enum de perfis
-- [ ] Tabela `users` (e-mail único, hash de senha)
-- [ ] Enum `Role`: ADMIN, ORGANIZER, STAFF, BUYER
-- [ ] Migration
+- [x] Tabela `users` (e-mail único, hash de senha)
+- [x] Enum `Role`: ADMIN, ORGANIZER, STAFF, BUYER
+- [x] Migration
 
 ### [DB] Criar seed de usuários de teste
-- [ ] Um usuário por perfil
-- [ ] Script idempotente (upsert)
+- [x] Um usuário por perfil
+- [x] Script idempotente (upsert)
 
 ### [API] Criar middleware de validação de payload
-- [ ] Middleware genérico com Zod
-- [ ] Resposta de erro no formato padrão
+- [x] Middleware genérico com Zod
+- [x] Resposta de erro no formato padrão
 
 ### [API] Criar POST /register
-- [ ] Validação de payload
-- [ ] Hash de senha
-- [ ] Sempre criar como BUYER (ignorar perfil enviado)
-- [ ] E-mail duplicado retorna 409
+- [x] Validação de payload
+- [x] Hash de senha
+- [x] Sempre criar como BUYER (ignorar perfil enviado)
+- [x] E-mail duplicado retorna 409
 
 ### [API] Criar POST /login e serviço de JWT
-- [ ] Validação de credenciais
-- [ ] Geração de JWT (secret e expiração via env)
-- [ ] Erro 401 genérico para credenciais inválidas
+- [x] Validação de credenciais
+- [x] Geração de JWT (secret e expiração via env)
+- [x] Erro 401 genérico para credenciais inválidas
 
 ### [API] Criar middlewares authenticate e authorize
-- [ ] `authenticate`: valida o JWT
-- [ ] `authorize(roles)`: RBAC por perfil
-- [ ] Retornar 401 e 403 corretamente
+- [x] `authenticate`: valida o JWT
+- [x] `authorize(roles)`: RBAC por perfil
+- [x] Retornar 401 e 403 corretamente
 
 ### [API] Criar GET /me
-- [ ] Retornar usuário autenticado
-- [ ] Não expor hash de senha
+- [x] Retornar usuário autenticado
+- [x] Não expor hash de senha
 
 ### [Tests] Testes de integração de autenticação
-- [ ] Registro (sucesso e duplicado)
-- [ ] Login (sucesso e falha)
-- [ ] RBAC (401 e 403)
+- [x] Registro (sucesso e duplicado)
+- [x] Login (sucesso e falha)
+- [x] RBAC (401 e 403)
 
 ### [UI] Configurar cliente HTTP (Axios)
-- [ ] Instância com `baseURL` via env
-- [ ] Interceptor de envio automático do token
-- [ ] Interceptor de erros (400, 401, 403, 404, 409, 422, 500)
+- [x] Instância com `baseURL` via env
+- [x] Interceptor de envio automático do token
+- [x] Interceptor de erros (400, 401, 403, 404, 409, 422, 500)
 
 ### [UI] Criar componentes base de estado
-- [ ] `Loading`
-- [ ] `EmptyState`
-- [ ] `ErrorState`
+- [x] `Loading`
+- [x] `EmptyState`
+- [x] `ErrorState`
 
 ### [UI] Criar AuthContext e rotas privadas
-- [ ] Contexto global de autenticação
-- [ ] Persistência do token e logout
-- [ ] Wrapper de rotas privadas com checagem de perfil
+- [x] Contexto global de autenticação
+- [x] Persistência do token e logout
+- [x] Wrapper de rotas privadas com checagem de perfil
 
 ### [UI] Desenvolver formulários de Cadastro e Login
-- [ ] Validação de campos
-- [ ] Exibição de erros vindos da API
-- [ ] Redirecionamento após sucesso
+- [x] Validação de campos
+- [x] Exibição de erros vindos da API
+- [x] Redirecionamento após sucesso
 
 ## 📅 M03: Gestão de Eventos
 
