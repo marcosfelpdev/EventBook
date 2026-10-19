@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    name: Lint
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +34,35 @@ jobs:
           npm ci
           npm run lint
 
-  typecheck-and-build:
-    name: Typecheck & Build
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Typecheck Backend
+        run: |
+          cd backend
+          npm ci
+          npm run typecheck
+
+      - name: Typecheck Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run typecheck
+
+  build:
+    name: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,18 +80,16 @@ jobs:
         run: |
           cd backend
           npm ci
-          npm run typecheck
           npm run build
 
       - name: Build Frontend
         run: |
           cd frontend
           npm ci
-          npm run typecheck
           npm run build
 
   test:
-    name: Tests
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
