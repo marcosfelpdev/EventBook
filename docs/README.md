@@ -135,8 +135,8 @@ O desenvolvimento segue milestones, cada uma com issues atômicas no GitHub Proj
 # 1. Banco de dados
 docker compose up -d mysql
 
-# 2. API
-cd api
+# 2. Back-end
+cd backend
 cp .env.example .env          # ajuste DATABASE_URL, JWT_SECRET e SEED_PASSWORD
 npm install
 npx prisma migrate dev
@@ -144,7 +144,7 @@ npm run db:seed
 npm run dev                   # http://localhost:3333
 
 # 3. Front-end (em outro terminal)
-cd web
+cd frontend
 npm install
 npm run dev                   # http://localhost:5173
 ```
@@ -163,22 +163,22 @@ O passo a passo completo de instalação, com todos os comandos e configuraçõe
 ## Testes
 
 ```bash
-cd api
+cd backend
 npm run lint && npm run typecheck
 npm test
 ```
 
-Os testes de integração rodam contra um banco isolado (`eventbook_test`), configurado em `api/.env.test`. As regras mais sensíveis têm testes dedicados: concorrência do overselling (RN-03), rollback do checkout (RN-05) e bordas de horário (RN-02, RN-06 e RN-08).
+Os testes de integração rodam contra um banco isolado (`eventbook_test`), configurado em `backend/.env.test`. As regras mais sensíveis têm testes dedicados: concorrência do overselling (RN-03), rollback do checkout (RN-05) e bordas de horário (RN-02, RN-06 e RN-08).
 
 ## Estrutura do repositório
 
 ```
 eventbook/
-├── api/        # Back-end: Express, Prisma, testes
-├── web/        # Front-end: React, Vite
-├── docs/       # Regras de negócio, ERD, perfis, convenções, setup
-├── e2e/        # Testes ponta a ponta (a partir da M09)
-└── .github/    # CI, templates de issue e PR, CODEOWNERS
+├── backend/     # Back-end: Express, Prisma, testes
+├── frontend/    # Front-end: React, Vite, Tailwind CSS
+├── docs/        # Regras de negócio, ERD, perfis, convenções, setup
+├── e2e/         # Testes ponta a ponta (a partir da M09)
+└── .github/     # CI, templates de issue e PR, CODEOWNERS
 ```
 
 ## Como contribuir
