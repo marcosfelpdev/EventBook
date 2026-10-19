@@ -22,5 +22,30 @@ model User {
   role         Role     @default(BUYER)
   createdAt    DateTime @default(now()) @map("created_at")
 
+  events       Event[]
+
   @@map("users")
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+model Event {
+  id          Int         @id @default(autoincrement())
+  organizerId Int         @map("organizer_id")
+  title       String
+  description String      @db.Text
+  location    String
+  capacity    Int
+  startsAt    DateTime    @map("starts_at")
+  endsAt      DateTime    @map("ends_at")
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  organizer   User        @relation(fields: [organizerId], references: [id])
+
+  @@map("events")
 }
