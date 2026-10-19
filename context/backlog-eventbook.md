@@ -153,54 +153,54 @@ Cada `###` é uma Issue do GitHub. As tarefas com `- [ ]` viram checkboxes clic�
 ## 📅 M03: Gestão de Eventos
 
 ### [DB] Criar schema de events
-- [ ] FK para organizer
-- [ ] `capacity`, `starts_at` e `ends_at` (UTC)
-- [ ] `status`: DRAFT, PUBLISHED, CANCELLED
-- [ ] Migration
+- [x] FK para organizer
+- [x] `capacity`, `starts_at` e `ends_at` (UTC)
+- [x] `status`: DRAFT, PUBLISHED, CANCELLED
+- [x] Migration
 
 ### [DB] Atualizar seed com eventos de demonstração
-- [ ] Eventos em vários status
-- [ ] Ao menos um evento passado
+- [x] Eventos em vários status
+- [x] Ao menos um evento passado
 
 ### [API] Criar GET /events
-- [ ] Rota pública, somente publicados
-- [ ] Paginação
+- [x] Rota pública, somente publicados
+- [x] Paginação
 
 ### [API] Criar GET /events/:id
-- [ ] Detalhe do evento
-- [ ] 404 para inexistente ou não publicado (exceto dono)
+- [x] Detalhe do evento
+- [x] 404 para inexistente ou não publicado (exceto dono)
 
 ### [API] Criar POST /events
-- [ ] Restrito a ORGANIZER
-- [ ] Validação de payload e datas
-- [ ] Evento nasce como DRAFT
+- [x] Restrito a ORGANIZER
+- [x] Validação de payload e datas
+- [x] Evento nasce como DRAFT
 
 ### [API] Criar PATCH /events/:id com RN-01
-- [ ] Checagem de dono do evento
-- [ ] RN-01: bloquear edição de evento no passado
-- [ ] Validação de payload
+- [x] Checagem de dono do evento
+- [x] RN-01: bloquear edição de evento no passado
+- [x] Validação de payload
 
 ### [Tests] Testes de integração de eventos
-- [ ] Ownership (403 para não dono)
-- [ ] RN-01 (edição no passado)
-- [ ] Listagem pública e paginação
+- [x] Ownership (403 para não dono)
+- [x] RN-01 (edição no passado)
+- [x] Listagem pública e paginação
 
 ### [UI] Desenvolver vitrine pública de eventos
-- [ ] Listagem com paginação
-- [ ] Loading, empty e error states
+- [x] Listagem com paginação
+- [x] Loading, empty e error states
 
 ### [UI] Desenvolver detalhe do evento
-- [ ] Informações do evento
-- [ ] Área reservada para lotes (M04)
+- [x] Informações do evento
+- [x] Área reservada para lotes (M04)
 
 ### [UI] Construir shell do Painel do Organizador
-- [ ] Layout com navegação
-- [ ] Rota protegida para ORGANIZER
+- [x] Layout com navegação
+- [x] Rota protegida para ORGANIZER
 
 ### [UI] Desenvolver formulário de criação e edição de evento
-- [ ] Validação de campos e datas
-- [ ] Modo criação e modo edição
-- [ ] Tratamento de erros da API
+- [x] Validação de campos e datas
+- [x] Modo criação e modo edição
+- [x] Tratamento de erros da API
 
 ## 🎟️ M04: Gestão de Lotes e Capacidade
 
