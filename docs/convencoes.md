@@ -26,13 +26,13 @@ Formato: `<tipo>/<numero-da-issue>-<descricao-curta>`
 Formato: `<tipo>(<escopo>): <descrição no imperativo>`
 
 ```
-feat(api): add POST /orders with stock validation
-fix(web): handle 409 on cart summary
-test(api): cover checkout rollback (RN-05)
+feat(backend): add POST /orders with stock validation
+fix(frontend): handle 409 on cart summary
+test(backend): cover checkout rollback (RN-05)
 chore(infra): add mysql service to docker-compose
 ```
 
-Escopos: `api`, `web`, `db`, `infra`, `docs`, `tests`.
+Escopos: `backend`, `frontend`, `db`, `infra`, `docs`, `tests`.
 
 ## Pull Requests
 
