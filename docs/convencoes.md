@@ -73,9 +73,9 @@ Toda resposta de erro segue:
 | `400` | Payload malformado ou inválido | `VALIDATION_ERROR` |
 | `401` | Não autenticado ou token inválido | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
 | `403` | Autenticado, sem permissão | `FORBIDDEN` |
-| `404` | Recurso inexistente | `NOT_FOUND`, `TICKET_NOT_FOUND` |
+| `404` | Recurso inexistente | `EVENT_NOT_FOUND`, `LOT_NOT_FOUND`, `NOT_FOUND`, `TICKET_NOT_FOUND` |
 | `409` | Conflito de estado ou concorrência | `EMAIL_ALREADY_EXISTS`, `INSUFFICIENT_STOCK`, `TICKET_ALREADY_USED`, `ORDER_ALREADY_PAID` |
-| `422` | Regra de negócio violada | `EVENT_IN_PAST`, `EVENT_WITHOUT_LOTS`, `LOT_OUT_OF_SALE_WINDOW`, `LOT_INACTIVE`, `ORDER_EXPIRED`, `CANCELLATION_WINDOW_CLOSED`, `CHECKIN_WINDOW_CLOSED`, `TICKET_WRONG_EVENT`, `TICKET_INVALID` |
+| `422` | Regra de negócio violada | `EVENT_CAPACITY_EXCEEDED`, `INVALID_SALES_WINDOW`, `EVENT_IN_PAST`, `EVENT_WITHOUT_LOTS`, `LOT_OUT_OF_SALE_WINDOW`, `LOT_INACTIVE`, `ORDER_EXPIRED`, `CANCELLATION_WINDOW_CLOSED`, `CHECKIN_WINDOW_CLOSED`, `TICKET_WRONG_EVENT`, `TICKET_INVALID` |
 | `500` | Erro inesperado | `INTERNAL_ERROR` |
 
 O error handler global nunca expõe stack trace nem detalhes internos em `500`.

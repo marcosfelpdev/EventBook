@@ -126,6 +126,8 @@ O desenvolvimento segue milestones, cada uma com issues atômicas no GitHub Proj
 | `POST` | `/register` | Público |
 | `POST` | `/login` | Público |
 | `GET` | `/me` | Autenticado |
+| `GET` | `/events/:id/lots` | Público: lotes ativos; organizador dono: todos |
+| `PATCH` | `/events/:id/lots/:lotId` | Organizador dono do evento |
 
 ## Como rodar
 
