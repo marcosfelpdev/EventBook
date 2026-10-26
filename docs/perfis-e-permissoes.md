@@ -32,7 +32,7 @@ Legenda: ✅ permitido · 🔒 permitido com checagem de recurso · ❌ negado
 | `GET /events/:id/lots` | ✅ ativos | ✅ ativos | 🔒 todos (dono) | ✅ ativos | ✅ ativos |
 | `POST /events` | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `PATCH /events/:id`, `POST /events/:id/publish` | ❌ | ❌ | 🔒 dono | ❌ | ❌ |
-| `POST/PATCH /events/:id/lots` | ❌ | ❌ | 🔒 dono | ❌ | ❌ |
+| `POST /events/:id/lots`, `PATCH /events/:id/lots/:lotId` | ❌ | ❌ | 🔒 dono | ❌ | ❌ |
 | `POST/GET/DELETE /events/:id/staff` | ❌ | ❌ | 🔒 dono | ❌ | ❌ |
 | `GET /events/:id/occupancy` | ❌ | ❌ | 🔒 dono | ❌ | ❌ |
 | `POST /orders` | ❌ | ✅ | ❌ | ❌ | ❌ |
