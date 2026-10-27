@@ -11,6 +11,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
+  console.error('Unhandled error:', err);
+
   res.status(500).json({
     code: 'INTERNAL_ERROR',
     message: 'Erro interno do servidor.',

@@ -22,6 +22,7 @@ services:
     restart: always
     ports:
       - "3333:3333"
+    command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run start"
     environment:
       PORT: 3333
       NODE_ENV: production
