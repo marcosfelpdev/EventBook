@@ -108,24 +108,32 @@ O desenvolvimento segue milestones, cada uma com issues atômicas no GitHub Proj
 
 | Milestone | Escopo | Status |
 |---|---|---|
-| M01 | Fundação, infraestrutura, CI e testes | 🚧 Em andamento |
-| M02 | Autenticação e perfis (RBAC) | 🚧 API pronta, interface pendente |
-| M03 | Gestão de eventos | ⏳ Planejada |
-| M04 | Lotes e capacidade | ⏳ Planejada |
-| M05 | Pedido e reserva temporária | ⏳ Planejada |
+| M01 | Fundação, infraestrutura, CI e testes | ✅ Concluída |
+| M02 | Autenticação e perfis (RBAC) | ✅ Concluída |
+| M03 | Gestão de eventos | ✅ Concluída |
+| M04 | Lotes e capacidade | ✅ Concluída |
+| M05 | Pedido e reserva temporária | ⏳ Próxima |
 | M06 | Checkout atômico e cancelamento | ⏳ Planejada |
 | M07 | Staff e check-in | ⏳ Planejada |
 | M08 | Ocupação | ⏳ Planejada |
 | M09 | Hardening e release | ⏳ Planejada |
 
-**Endpoints disponíveis hoje**
+**Endpoints disponíveis**
 
-| Método | Rota | Acesso |
-|---|---|---|
-| `GET` | `/health` | Público |
-| `POST` | `/register` | Público |
-| `POST` | `/login` | Público |
-| `GET` | `/me` | Autenticado |
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/health` | Público | Healthcheck da API |
+| `POST` | `/register` | Público | Cadastro de novo usuário (BUYER) |
+| `POST` | `/login` | Público | Autenticação com JWT |
+| `GET` | `/me` | Autenticado | Perfil do usuário autenticado |
+| `GET` | `/events` | Público | Listagem paginada de eventos publicados |
+| `GET` | `/events/:id` | Público / Dono | Detalhes do evento com lotes ativos |
+| `POST` | `/events` | ORGANIZER, ADMIN | Criação de evento (DRAFT) |
+| `PATCH` | `/events/:id` | Dono, ADMIN | Edição de evento (RN-01: bloqueia passado) |
+| `POST` | `/events/:id/publish` | Dono, ADMIN | Publicação de evento (RN-01: requer lotes) |
+| `GET` | `/events/:id/lots` | Público (ativos) / Dono (todos) | Listagem de lotes de um evento |
+| `POST` | `/events/:id/lots` | Dono, ADMIN | Cadastro de lote (valida capacidade e datas) |
+| `PATCH` | `/events/:id/lots/:lotId` | Dono, ADMIN | Edição de lote (revalida capacidade) |
 
 ## Como rodar
 

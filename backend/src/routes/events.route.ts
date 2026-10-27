@@ -23,3 +23,9 @@ eventsRouter.patch(
   validate(updateEventSchema),
   eventsController.updateEvent,
 );
+eventsRouter.post(
+  '/events/:id/publish',
+  authenticate,
+  authorize(Role.ORGANIZER, Role.ADMIN),
+  eventsController.publishEvent,
+);

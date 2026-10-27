@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventsService } from '../services/eventsService';
+import { lotsService } from '../services/lotsService';
 import type { Event } from '../types/event';
+import type { TicketLot } from '../types/lot';
 import { Loading } from '../components/Loading';
 import { ErrorState } from '../components/ErrorState';
+import { EmptyState } from '../components/EmptyState';
 import { useAuth } from '../hooks/useAuth';
 
 export function EventDetailPage() {
@@ -12,11 +15,13 @@ export function EventDetailPage() {
   const { user } = useAuth();
 
   const [event, setEvent] = useState<Event | null>(null);
+  const [lots, setLots] = useState<TicketLot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingLots, setIsLoadingLots] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchEvent() {
+    async function fetchEventAndLots() {
       if (!id) {
         return;
       }
@@ -25,8 +30,22 @@ export function EventDetailPage() {
       setErrorMessage(null);
 
       try {
-        const data = await eventsService.getEventById(Number(id));
-        setEvent(data);
+        const eventData = await eventsService.getEventById(Number(id));
+        setEvent(eventData);
+
+        // Fetch lots
+        setIsLoadingLots(true);
+        try {
+          const lotsData = await lotsService.listLots(Number(id));
+          setLots(lotsData);
+        } catch {
+          // Fallback to event.lots if present
+          if (eventData.lots) {
+            setLots(eventData.lots);
+          }
+        } finally {
+          setIsLoadingLots(false);
+        }
       } catch {
         setErrorMessage('Evento não encontrado ou indisponível para visualização pública.');
       } finally {
@@ -34,7 +53,7 @@ export function EventDetailPage() {
       }
     }
 
-    fetchEvent();
+    fetchEventAndLots();
   }, [id]);
 
   function formatDate(isoDate: string) {
@@ -47,6 +66,18 @@ export function EventDetailPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  function formatPrice(price: number | string) {
+    const num = Number(price);
+    return `R$ ${num.toFixed(2).replace('.', ',')}`;
+  }
+
+  function isWithinSaleWindow(startIso: string, endIso: string) {
+    const now = new Date();
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    return now >= start && now <= end;
   }
 
   return (
@@ -134,28 +165,108 @@ export function EventDetailPage() {
                 {event.description}
               </p>
 
-              {/* Área reservada para Lotes (M04) */}
+              {/* Lotes e Ingressos (M04) */}
               <section className="border-t border-slate-200 pt-8">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-slate-900">Ingressos e Lotes</h3>
-                  <span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded">
-                    Milestone 04
-                  </span>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Ingressos e Lotes</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Confira os lotes disponíveis para este evento.
+                    </p>
+                  </div>
+
+                  {(user?.role === 'ORGANIZER' || user?.role === 'ADMIN') &&
+                    user.id === Number(event.organizerId) && (
+                      <button
+                        type="button"
+                        onClick={() => navigate('/dashboard')}
+                        className="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        Gerenciar Lotes
+                      </button>
+                    )}
                 </div>
 
-                <div className="p-6 border border-dashed border-blue-300 rounded-xl bg-blue-50/50 text-center">
-                  <p className="text-sm text-slate-700 font-medium mb-1">
-                    A venda e gestão de lotes será disponibilizada na próxima etapa (M04).
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Aqui você poderá selecionar a quantidade de ingressos por lote, verificar o estoque disponível e avançar para o checkout.
-                  </p>
-                </div>
+                {isLoadingLots && <Loading message="Carregando lotes..." />}
+
+                {!isLoadingLots && lots.length === 0 && (
+                  <EmptyState
+                    title="Ingressos em breve"
+                    description="Nenhum lote de ingressos está disponível para este evento no momento."
+                  />
+                )}
+
+                {!isLoadingLots && lots.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {lots.map((lot) => {
+                      const isOpen = isWithinSaleWindow(lot.salesStartAt, lot.salesEndAt);
+                      const isSoldOut = lot.quantity === 0;
+
+                      return (
+                        <div
+                          key={lot.id}
+                          className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-shadow shadow-sm flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-slate-900 text-base">{lot.name}</h4>
+                              <span
+                                className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                  isSoldOut
+                                    ? 'bg-red-100 text-red-700'
+                                    : isOpen
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {isSoldOut ? 'Esgotado' : isOpen ? 'Vendas Abertas' : 'Encerrado'}
+                              </span>
+                            </div>
+
+                            <div className="text-2xl font-black text-slate-900 mb-3">
+                              {formatPrice(lot.price)}
+                            </div>
+
+                            <div className="space-y-1 text-xs text-slate-600">
+                              <div>
+                                <span className="font-semibold text-slate-700">Quantidade:</span>{' '}
+                                {lot.quantity} ingressos
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-700">Vendas até:</span>{' '}
+                                {new Date(lot.salesEndAt).toLocaleDateString('pt-BR')} às{' '}
+                                {new Date(lot.salesEndAt).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span className="text-slate-400 italic">
+                              Compra de ingressos disponível no M05
+                            </span>
+                            <button
+                              type="button"
+                              disabled
+                              className="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-semibold cursor-not-allowed"
+                            >
+                              Comprar
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             </div>
 
             <footer className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
-              <span>Organizado por: <strong>{event.organizer?.name ?? 'Organizador'}</strong></span>
+              <span>
+                Organizado por: <strong>{event.organizer?.name ?? 'Organizador'}</strong>
+              </span>
               <span>Contato: {event.organizer?.email ?? 'contato@eventbook.test'}</span>
             </footer>
           </article>

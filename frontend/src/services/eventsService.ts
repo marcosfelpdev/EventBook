@@ -32,9 +32,15 @@ export async function updateEvent(eventId: number, data: UpdateEventPayload): Pr
   return response.data;
 }
 
+export async function publishEvent(eventId: number): Promise<Event> {
+  const response = await api.post<Event>(`/events/${eventId}/publish`);
+  return response.data;
+}
+
 export const eventsService = {
   listEvents,
   getEventById,
   createEvent,
   updateEvent,
+  publishEvent,
 };

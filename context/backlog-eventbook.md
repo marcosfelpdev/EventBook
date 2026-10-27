@@ -205,47 +205,47 @@ Cada `###` é uma Issue do GitHub. As tarefas com `- [ ]` viram checkboxes clic�
 ## 🎟️ M04: Gestão de Lotes e Capacidade
 
 ### [DB] Criar schema de ticket_lots
-- [ ] Preço, quantidade e janela de venda
-- [ ] Flag de ativo
-- [ ] FK para evento
-- [ ] Migration
+- [x] Preço, quantidade e janela de venda
+- [x] Flag de ativo
+- [x] FK para evento
+- [x] Migration
 
 ### [DB] Atualizar seed com lotes
-- [ ] Lotes ativos
-- [ ] Lotes inativos
-- [ ] Lotes esgotados
+- [x] Lotes ativos
+- [x] Lotes inativos
+- [x] Lotes esgotados
 
 ### [API] Criar POST /events/:id/lots com validações
-- [ ] Restrito ao dono do evento
-- [ ] Soma dos lotes ≤ `capacity` do evento
-- [ ] Consistência de datas (janela de venda dentro do evento)
+- [x] Restrito ao dono do evento
+- [x] Soma dos lotes ≤ `capacity` do evento
+- [x] Consistência de datas (janela de venda dentro do evento)
 
 ### [API] Criar GET e PATCH de lotes
-- [ ] `GET /events/:id/lots` (público: ativos; organizador: todos)
-- [ ] `PATCH /events/:id/lots/:lotId`
-- [ ] Revalidar capacidade na edição
+- [x] `GET /events/:id/lots` (público: ativos; organizador: todos)
+- [x] `PATCH /events/:id/lots/:lotId`
+- [x] Revalidar capacidade na edição
 
 ### [API] Criar POST /events/:id/publish com RN-01
-- [ ] RN-01: bloquear publicação sem lotes
-- [ ] Bloquear publicação de evento no passado
-- [ ] Mudar status para PUBLISHED
+- [x] RN-01: bloquear publicação sem lotes
+- [x] Bloquear publicação de evento no passado
+- [x] Mudar status para PUBLISHED
 
 ### [Tests] Testes de lotes e publicação
-- [ ] Limite de capacidade
-- [ ] Datas inconsistentes
-- [ ] Publicação sem lotes
+- [x] Limite de capacidade
+- [x] Datas inconsistentes
+- [x] Publicação sem lotes
 
 ### [UI] Desenvolver listagem de lotes no Painel
-- [ ] Tabela com status e disponibilidade
-- [ ] Empty state
+- [x] Tabela com status e disponibilidade
+- [x] Empty state
 
 ### [UI] Desenvolver formulário de lotes
-- [ ] Criação e edição
-- [ ] Validação de capacidade e datas
+- [x] Criação e edição
+- [x] Validação de capacidade e datas
 
 ### [UI] Exibir lotes no detalhe e botão Publicar
-- [ ] Lotes ativos no detalhe do evento
-- [ ] Botão "Publicar" no Painel com tratamento de erro da RN-01
+- [x] Lotes ativos no detalhe do evento
+- [x] Botão "Publicar" no Painel com tratamento de erro da RN-01
 
 ## 🛒 M05: Pedido e Reserva Temporária
 

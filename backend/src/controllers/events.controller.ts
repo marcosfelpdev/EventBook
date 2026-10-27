@@ -24,3 +24,9 @@ export const updateEvent: RequestHandler = async (req, res) => {
   const event = await eventsService.updateEvent(eventId, req.user!.id, req.body, req.user!.role);
   res.status(200).json(event);
 };
+
+export const publishEvent: RequestHandler = async (req, res) => {
+  const eventId = Number(req.params.id);
+  const event = await eventsService.publishEvent(eventId, req.user!.id, req.user!.role);
+  res.status(200).json(event);
+};
