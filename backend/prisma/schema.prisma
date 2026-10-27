@@ -46,6 +46,23 @@ model Event {
   createdAt   DateTime    @default(now()) @map("created_at")
 
   organizer   User        @relation(fields: [organizerId], references: [id])
+  lots        TicketLot[]
 
   @@map("events")
+}
+
+model TicketLot {
+  id           Int      @id @default(autoincrement())
+  eventId      Int      @map("event_id")
+  name         String
+  price        Decimal  @db.Decimal(10, 2)
+  quantity     Int
+  salesStartAt DateTime @map("sales_start_at")
+  salesEndAt   DateTime @map("sales_end_at")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_lots")
 }

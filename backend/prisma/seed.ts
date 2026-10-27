@@ -99,7 +99,7 @@ async function main() {
       },
     ];
 
-    await Promise.all(
+    const savedEvents = await Promise.all(
       seedEvents.map(async (eventData) => {
         const existing = await prisma.event.findFirst({
           where: {
@@ -109,20 +109,122 @@ async function main() {
         });
 
         if (existing) {
-          await prisma.event.update({
+          return prisma.event.update({
             where: { id: existing.id },
             data: eventData,
           });
-        } else {
-          await prisma.event.create({
-            data: eventData,
-          });
         }
+
+        return prisma.event.create({
+          data: eventData,
+        });
       }),
     );
+
+    const festivalEvent = savedEvents.find((e) => e.title === 'Festival de Música de Verão');
+    const workshopEvent = savedEvents.find((e) => e.title === 'Workshop de Arquitetura de Software');
+
+    if (festivalEvent) {
+      const festivalLots = [
+        {
+          name: '1º Lote - Pista',
+          price: 120.0,
+          quantity: 2000,
+          salesStartAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+          salesEndAt: new Date(festivalEvent.endsAt),
+          active: true,
+          eventId: festivalEvent.id,
+        },
+        {
+          name: '1º Lote - VIP Frontstage',
+          price: 250.0,
+          quantity: 500,
+          salesStartAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+          salesEndAt: new Date(festivalEvent.endsAt),
+          active: true,
+          eventId: festivalEvent.id,
+        },
+        {
+          name: 'Lote Promocional Antecipado (Inativo)',
+          price: 80.0,
+          quantity: 200,
+          salesStartAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+          salesEndAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+          active: false,
+          eventId: festivalEvent.id,
+        },
+        {
+          name: 'Lote Early Bird (Esgotado)',
+          price: 90.0,
+          quantity: 0,
+          salesStartAt: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
+          salesEndAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+          active: true,
+          eventId: festivalEvent.id,
+        },
+      ];
+
+      await Promise.all(
+        festivalLots.map(async (lotData) => {
+          const existingLot = await prisma.ticketLot.findFirst({
+            where: {
+              eventId: festivalEvent.id,
+              name: lotData.name,
+            },
+          });
+
+          if (existingLot) {
+            return prisma.ticketLot.update({
+              where: { id: existingLot.id },
+              data: lotData,
+            });
+          }
+
+          return prisma.ticketLot.create({
+            data: lotData,
+          });
+        }),
+      );
+    }
+
+    if (workshopEvent) {
+      const workshopLots = [
+        {
+          name: 'Lote Único - Inscrição Geral',
+          price: 150.0,
+          quantity: 150,
+          salesStartAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+          salesEndAt: new Date(workshopEvent.endsAt),
+          active: true,
+          eventId: workshopEvent.id,
+        },
+      ];
+
+      await Promise.all(
+        workshopLots.map(async (lotData) => {
+          const existingLot = await prisma.ticketLot.findFirst({
+            where: {
+              eventId: workshopEvent.id,
+              name: lotData.name,
+            },
+          });
+
+          if (existingLot) {
+            return prisma.ticketLot.update({
+              where: { id: existingLot.id },
+              data: lotData,
+            });
+          }
+
+          return prisma.ticketLot.create({
+            data: lotData,
+          });
+        }),
+      );
+    }
   }
 
-  console.log('Seed de usuários e eventos executado com sucesso.');
+  console.log('Seed de usuários, eventos e lotes executado com sucesso.');
 }
 
 main()
