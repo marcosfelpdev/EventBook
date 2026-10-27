@@ -7,6 +7,7 @@ import type { ApiError } from '../services/api';
 import { Loading } from '../components/Loading';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
+import { LotsModal } from '../components/LotsModal';
 
 export function OrganizerDashboardPage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export function OrganizerDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Modal / Form state
+  // Modal / Form state for events
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
@@ -31,6 +32,16 @@ export function OrganizerDashboardPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formApiError, setFormApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Lots management state
+  const [managingLotsEvent, setManagingLotsEvent] = useState<Event | null>(null);
+
+  // Publication state feedback
+  const [actionFeedback, setActionFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [publishingEventId, setPublishingEventId] = useState<number | null>(null);
 
   const [reloadCounter, setReloadCounter] = useState(0);
 
@@ -121,23 +132,17 @@ export function OrganizerDashboardPage() {
 
     if (!startsAt) {
       errors.startsAt = 'Data de início é obrigatória.';
+    } else {
+      const start = new Date(startsAt);
+      if (!editingEvent && start <= new Date()) {
+        errors.startsAt = 'A data de início deve estar no futuro.';
+      }
     }
 
     if (!endsAt) {
       errors.endsAt = 'Data de término é obrigatória.';
-    }
-
-    if (startsAt && endsAt) {
-      const start = new Date(startsAt);
-      const end = new Date(endsAt);
-
-      if (editingEvent === null && start <= new Date()) {
-        errors.startsAt = 'A data de início deve estar no futuro.';
-      }
-
-      if (end <= start) {
-        errors.endsAt = 'A data de término deve ser posterior à data de início.';
-      }
+    } else if (startsAt && new Date(endsAt) <= new Date(startsAt)) {
+      errors.endsAt = 'A data de término deve ser posterior à data de início.';
     }
 
     setFormErrors(errors);
@@ -146,7 +151,6 @@ export function OrganizerDashboardPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setFormApiError(null);
 
     if (!validateForm()) {
       return;
@@ -184,6 +188,34 @@ export function OrganizerDashboardPage() {
       setFormApiError(error.message || 'Erro ao processar operação com o evento.');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handlePublishEvent(event: Event) {
+    setPublishingEventId(event.id);
+    setActionFeedback(null);
+
+    try {
+      await eventsService.publishEvent(event.id);
+      setActionFeedback({
+        type: 'success',
+        message: `O evento "${event.title}" foi publicado com sucesso e agora está visível na vitrine pública!`,
+      });
+      setReloadCounter((c) => c + 1);
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      let msg = error.message;
+      if (error.code === 'EVENT_WITHOUT_LOTS') {
+        msg = 'Não é possível publicar: o evento não possui nenhum lote cadastrado. Adicione pelo menos um lote antes de publicar (RN-01).';
+      } else if (error.code === 'EVENT_IN_PAST') {
+        msg = 'Não é possível publicar: o evento já iniciou ou ocorreu no passado (RN-01).';
+      }
+      setActionFeedback({
+        type: 'error',
+        message: msg || 'Erro ao publicar o evento.',
+      });
+    } finally {
+      setPublishingEventId(null);
     }
   }
 
@@ -234,11 +266,11 @@ export function OrganizerDashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Gerenciamento de Eventos</h1>
             <p className="text-sm text-slate-600 mt-1">
-              Crie novos eventos ou gerencie os já cadastrados.
+              Crie novos eventos, configure lotes de ingressos e publique para os participantes.
             </p>
           </div>
 
@@ -250,6 +282,29 @@ export function OrganizerDashboardPage() {
             + Criar Novo Evento
           </button>
         </div>
+
+        {/* Action Feedback Banner */}
+        {actionFeedback && (
+          <div
+            className={`mb-6 p-4 rounded-xl border text-sm flex justify-between items-center ${
+              actionFeedback.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-bold">{actionFeedback.type === 'success' ? '✓' : '⚠️'}</span>
+              <span>{actionFeedback.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionFeedback(null)}
+              className="text-xs font-bold px-2 py-1 rounded hover:bg-black/5"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
 
         {isLoading && <Loading message="Carregando eventos do painel..." />}
 
@@ -286,54 +341,90 @@ export function OrganizerDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {events.map((event) => (
-                  <tr key={event.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-slate-900">
-                      <div>{event.title}</div>
-                      <div className="text-xs text-slate-500 font-normal">{event.location}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                          event.status === 'PUBLISHED'
-                            ? 'bg-green-100 text-green-800'
-                            : event.status === 'DRAFT'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {event.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 font-mono">
-                      {event.capacity}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 font-mono text-xs">
-                      {formatDate(event.startsAt)}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(event)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/events/${event.id}`)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors"
-                      >
-                        Ver
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {events.map((event) => {
+                  const isPublishing = publishingEventId === event.id;
+
+                  return (
+                    <tr key={event.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-slate-900">
+                        <div>{event.title}</div>
+                        <div className="text-xs text-slate-500 font-normal">{event.location}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                            event.status === 'PUBLISHED'
+                              ? 'bg-green-100 text-green-800'
+                              : event.status === 'DRAFT'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {event.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 font-mono">
+                        {event.capacity}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 font-mono text-xs">
+                        {formatDate(event.startsAt)}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-1.5 whitespace-nowrap">
+                        {/* Botão Publicar se for DRAFT */}
+                        {event.status === 'DRAFT' && (
+                          <button
+                            type="button"
+                            disabled={isPublishing}
+                            onClick={() => handlePublishEvent(event)}
+                            className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors disabled:opacity-50"
+                            title="Publicar evento (requer ao menos 1 lote cadastrado - RN-01)"
+                          >
+                            {isPublishing ? 'Publicando...' : 'Publicar'}
+                          </button>
+                        )}
+
+                        {/* Botão Gerenciar Lotes */}
+                        <button
+                          type="button"
+                          onClick={() => setManagingLotsEvent(event)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200 transition-colors"
+                        >
+                          Lotes
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(event)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
+                        >
+                          Editar
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/events/${event.id}`)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors"
+                        >
+                          Ver
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </main>
+
+      {/* Modal de Gestão de Lotes (M04) */}
+      {managingLotsEvent && (
+        <LotsModal
+          event={managingLotsEvent}
+          onClose={() => setManagingLotsEvent(null)}
+          onLotsChanged={() => setReloadCounter((c) => c + 1)}
+        />
+      )}
 
       {/* Modal de Criação / Edição de Evento */}
       {isModalOpen && (
@@ -353,126 +444,104 @@ export function OrganizerDashboardPage() {
             </div>
 
             {formApiError && (
-              <div role="alert" className="mb-4 bg-red-50 text-red-700 p-3 rounded text-sm border border-red-200">
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
                 {formApiError}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label htmlFor="title" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Título do Evento
-                </label>
+                <label className="block font-semibold text-slate-700 mb-1">Título do Evento *</label>
                 <input
-                  id="title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Conferência de Tecnologia 2026"
-                  className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex: Festival de Verão 2026"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.title && (
-                  <span className="text-red-600 text-xs mt-1 block">{formErrors.title}</span>
+                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.title}</span>
                 )}
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Descrição
-                </label>
+                <label className="block font-semibold text-slate-700 mb-1">Descrição Completa *</label>
                 <textarea
-                  id="description"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Informações completas sobre o evento..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Descreva as atrações, programação e detalhes do evento..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.description && (
-                  <span className="text-red-600 text-xs mt-1 block">{formErrors.description}</span>
+                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.description}</span>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Localização *</label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Ex: Arena Centro, São Paulo - SP"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {formErrors.location && (
+                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.location}</span>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Capacidade Total *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                  placeholder="Ex: 500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {formErrors.capacity && (
+                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.capacity}</span>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="location" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Localização
-                  </label>
+                  <label className="block font-semibold text-slate-700 mb-1">Início *</label>
                   <input
-                    id="location"
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Cidade / Endereço"
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {formErrors.location && (
-                    <span className="text-red-600 text-xs mt-1 block">{formErrors.location}</span>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="capacity" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Capacidade Máxima
-                  </label>
-                  <input
-                    id="capacity"
-                    type="number"
-                    min={1}
-                    value={capacity}
-                    onChange={(e) => setCapacity(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {formErrors.capacity && (
-                    <span className="text-red-600 text-xs mt-1 block">{formErrors.capacity}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="startsAt" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Data e Hora de Início
-                  </label>
-                  <input
-                    id="startsAt"
                     type="datetime-local"
                     value={startsAt}
                     onChange={(e) => setStartsAt(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {formErrors.startsAt && (
-                    <span className="text-red-600 text-xs mt-1 block">{formErrors.startsAt}</span>
+                    <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.startsAt}</span>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="endsAt" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Data e Hora de Término
-                  </label>
+                  <label className="block font-semibold text-slate-700 mb-1">Término *</label>
                   <input
-                    id="endsAt"
                     type="datetime-local"
                     value={endsAt}
                     onChange={(e) => setEndsAt(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {formErrors.endsAt && (
-                    <span className="text-red-600 text-xs mt-1 block">{formErrors.endsAt}</span>
+                    <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.endsAt}</span>
                   )}
                 </div>
               </div>
 
               {editingEvent && (
                 <div>
-                  <label htmlFor="status" className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Status do Evento
-                  </label>
+                  <label className="block font-semibold text-slate-700 mb-1">Status</label>
                   <select
-                    id="status"
                     value={status}
                     onChange={(e) => setStatus(e.target.value as 'DRAFT' | 'PUBLISHED' | 'CANCELLED')}
-                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="DRAFT">DRAFT (Rascunho)</option>
                     <option value="PUBLISHED">PUBLISHED (Publicado)</option>
@@ -481,18 +550,18 @@ export function OrganizerDashboardPage() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border border-slate-300 rounded text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? 'Salvando...' : editingEvent ? 'Salvar Alterações' : 'Criar Evento'}
                 </button>

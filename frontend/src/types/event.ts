@@ -1,3 +1,5 @@
+import type { TicketLot } from './lot';
+
 export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
 
 export interface Event {
@@ -16,6 +18,7 @@ export interface Event {
     name: string;
     email: string;
   };
+  lots?: TicketLot[];
 }
 
 export interface PaginatedEvents {
