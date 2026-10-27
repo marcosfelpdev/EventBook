@@ -17,6 +17,14 @@ vi.mock('../src/lib/prisma.js', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    ticketLot: {
+      count: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }));
 
@@ -25,7 +33,7 @@ testApp.use(express.json());
 testApp.use(eventsRouter);
 testApp.use(errorHandler);
 
-describe('Testes de integração de eventos (M03)', () => {
+describe('Testes de integração de eventos (M03 e M04)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -44,6 +52,7 @@ describe('Testes de integração de eventos (M03)', () => {
           status: EventStatus.PUBLISHED,
           organizerId: 1,
           organizer: { id: 1, name: 'Organizador', email: 'org@teste.com' },
+          lots: [{ id: 1, name: 'Pista', price: 100, active: true }],
         },
       ];
 
@@ -74,6 +83,7 @@ describe('Testes de integração de eventos (M03)', () => {
         status: EventStatus.PUBLISHED,
         organizerId: 1,
         organizer: { id: 1, name: 'Organizador', email: 'org@teste.com' },
+        lots: [{ id: 1, name: 'Lote 1', active: true }],
       };
 
       vi.mocked(prisma.event.findUnique).mockResolvedValue(mockEvent as never);
@@ -105,6 +115,7 @@ describe('Testes de integração de eventos (M03)', () => {
         status: EventStatus.DRAFT,
         organizerId: 10,
         organizer: { id: 10, name: 'Outro', email: 'outro@teste.com' },
+        lots: [],
       };
 
       vi.mocked(prisma.event.findUnique).mockResolvedValue(mockEvent as never);
@@ -134,6 +145,7 @@ describe('Testes de integração de eventos (M03)', () => {
         status: EventStatus.DRAFT,
         organizerId: 10,
         organizer: { id: 10, name: 'Dono', email: 'dono@teste.com' },
+        lots: [],
       };
 
       vi.mocked(prisma.event.findUnique).mockResolvedValue(mockEvent as never);
@@ -185,6 +197,7 @@ describe('Testes de integração de eventos (M03)', () => {
         organizerId: 2,
         createdAt: new Date(),
         organizer: { id: 2, name: 'Organizer', email: 'org@teste.com' },
+        lots: [],
       } as never);
 
       const res = await request(testApp)
@@ -200,7 +213,6 @@ describe('Testes de integração de eventos (M03)', () => {
     it('retorna 400 se as datas forem inconsistentes (início no passado ou término antes do início)', async () => {
       const orgToken = jwt.sign({ sub: '2', role: Role.ORGANIZER }, env.JWT_SECRET);
 
-      // Data no passado
       const pastPayload = {
         ...validFuturePayload,
         startsAt: new Date(Date.now() - 86400000).toISOString(),
@@ -227,7 +239,7 @@ describe('Testes de integração de eventos (M03)', () => {
         startsAt: new Date(Date.now() + 86400000),
         endsAt: new Date(Date.now() + 172800000),
         status: EventStatus.DRAFT,
-        organizerId: 1, // Dono é o id 1
+        organizerId: 1,
       };
 
       vi.mocked(prisma.event.findUnique).mockResolvedValue(existingEvent as never);
@@ -250,7 +262,7 @@ describe('Testes de integração de eventos (M03)', () => {
         description: 'Descrição do evento antigo',
         location: 'Local Antigo',
         capacity: 100,
-        startsAt: new Date(Date.now() - 86400000), // Iniciou no passado
+        startsAt: new Date(Date.now() - 86400000),
         endsAt: new Date(Date.now() - 3600000),
         status: EventStatus.PUBLISHED,
         organizerId: 2,
@@ -298,6 +310,108 @@ describe('Testes de integração de eventos (M03)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.title).toBe('Título Atualizado com Sucesso');
+    });
+  });
+
+  describe('POST /events/:id/publish (RN-01: Publicação de eventos)', () => {
+    it('retorna 401 se o usuário não estiver autenticado', async () => {
+      const res = await request(testApp).post('/events/1/publish');
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe('UNAUTHENTICATED');
+    });
+
+    it('retorna 403 se um organizador que não é dono tentar publicar o evento', async () => {
+      const event = {
+        id: 1,
+        organizerId: 2,
+        title: 'Evento de Outro',
+        startsAt: new Date(Date.now() + 86400000),
+        status: EventStatus.DRAFT,
+        lots: [{ id: 10 }],
+      };
+
+      vi.mocked(prisma.event.findUnique).mockResolvedValue(event as never);
+
+      const notOwnerToken = jwt.sign({ sub: '99', role: Role.ORGANIZER }, env.JWT_SECRET);
+
+      const res = await request(testApp)
+        .post('/events/1/publish')
+        .set('Authorization', `Bearer ${notOwnerToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('FORBIDDEN');
+    });
+
+    it('RN-01: bloqueia publicação com 422 se o evento já ocorreu ou iniciou no passado', async () => {
+      const pastEvent = {
+        id: 1,
+        organizerId: 2,
+        title: 'Evento Passado',
+        startsAt: new Date(Date.now() - 86400000),
+        status: EventStatus.DRAFT,
+        lots: [{ id: 10 }],
+      };
+
+      vi.mocked(prisma.event.findUnique).mockResolvedValue(pastEvent as never);
+
+      const ownerToken = jwt.sign({ sub: '2', role: Role.ORGANIZER }, env.JWT_SECRET);
+
+      const res = await request(testApp)
+        .post('/events/1/publish')
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      expect(res.status).toBe(422);
+      expect(res.body.code).toBe('EVENT_IN_PAST');
+    });
+
+    it('RN-01: bloqueia publicação com 422 se o evento não tiver lotes cadastrados', async () => {
+      const eventWithoutLots = {
+        id: 1,
+        organizerId: 2,
+        title: 'Evento Sem Lotes',
+        startsAt: new Date(Date.now() + 86400000),
+        status: EventStatus.DRAFT,
+        lots: [],
+      };
+
+      vi.mocked(prisma.event.findUnique).mockResolvedValue(eventWithoutLots as never);
+
+      const ownerToken = jwt.sign({ sub: '2', role: Role.ORGANIZER }, env.JWT_SECRET);
+
+      const res = await request(testApp)
+        .post('/events/1/publish')
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      expect(res.status).toBe(422);
+      expect(res.body.code).toBe('EVENT_WITHOUT_LOTS');
+    });
+
+    it('publica o evento com sucesso com 200 quando todos os critérios são atendidos', async () => {
+      const validEvent = {
+        id: 1,
+        organizerId: 2,
+        title: 'Evento Válido',
+        startsAt: new Date(Date.now() + 86400000),
+        status: EventStatus.DRAFT,
+        lots: [{ id: 10, name: 'Lote 1', quantity: 100 }],
+      };
+
+      vi.mocked(prisma.event.findUnique).mockResolvedValue(validEvent as never);
+      vi.mocked(prisma.event.update).mockResolvedValue({
+        ...validEvent,
+        status: EventStatus.PUBLISHED,
+        organizer: { id: 2, name: 'Dono', email: 'org@teste.com' },
+      } as never);
+
+      const ownerToken = jwt.sign({ sub: '2', role: Role.ORGANIZER }, env.JWT_SECRET);
+
+      const res = await request(testApp)
+        .post('/events/1/publish')
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('PUBLISHED');
     });
   });
 });
