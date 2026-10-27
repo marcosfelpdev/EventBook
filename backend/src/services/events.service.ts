@@ -42,6 +42,10 @@ export async function listEvents({ page = 1, pageSize = 20, search }: ListEvents
             email: true,
           },
         },
+        lots: {
+          where: { active: true },
+          orderBy: { salesStartAt: 'asc' },
+        },
       },
     }),
   ]);
@@ -65,6 +69,9 @@ export async function getEventById(eventId: number, userContext?: RequestingUser
           email: true,
         },
       },
+      lots: {
+        orderBy: { salesStartAt: 'asc' },
+      },
     },
   });
 
@@ -77,6 +84,14 @@ export async function getEventById(eventId: number, userContext?: RequestingUser
 
   if (event.status !== EventStatus.PUBLISHED && !isOwner && !isAdmin) {
     throw new AppError(404, 'EVENT_NOT_FOUND', 'Evento não encontrado.');
+  }
+
+  // Se for público (não dono nem admin), filtrar apenas os lotes ativos
+  if (!isOwner && !isAdmin) {
+    return {
+      ...event,
+      lots: event.lots.filter((lot) => lot.active),
+    };
   }
 
   return event;
@@ -102,6 +117,7 @@ export async function createEvent(organizerId: number, input: CreateEventInput) 
           email: true,
         },
       },
+      lots: true,
     },
   });
 
@@ -158,8 +174,69 @@ export async function updateEvent(
           email: true,
         },
       },
+      lots: true,
     },
   });
 
   return updatedEvent;
+}
+
+export async function publishEvent(
+  eventId: number,
+  organizerId: number,
+  userRole?: string,
+) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { lots: true },
+  });
+
+  if (!event) {
+    throw new AppError(404, 'EVENT_NOT_FOUND', 'Evento não encontrado.');
+  }
+
+  const isOwner = event.organizerId === organizerId;
+  const isAdmin = userRole === 'ADMIN';
+
+  if (!isOwner && !isAdmin) {
+    throw new AppError(403, 'FORBIDDEN', 'Você não tem permissão para publicar este evento.');
+  }
+
+  // RN-01: Bloquear publicação de evento no passado
+  const now = new Date();
+  if (new Date(event.startsAt) < now) {
+    throw new AppError(
+      422,
+      'EVENT_IN_PAST',
+      'Não é possível publicar eventos que já iniciaram ou ocorreram no passado.',
+    );
+  }
+
+  // RN-01: Bloquear publicação sem lotes
+  if (!event.lots || event.lots.length === 0) {
+    throw new AppError(
+      422,
+      'EVENT_WITHOUT_LOTS',
+      'Um evento sem lotes não pode ser publicado.',
+    );
+  }
+
+  const updated = await prisma.event.update({
+    where: { id: eventId },
+    data: {
+      status: EventStatus.PUBLISHED,
+    },
+    include: {
+      organizer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      lots: true,
+    },
+  });
+
+  return updated;
 }
