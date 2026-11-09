@@ -98,6 +98,9 @@ erDiagram
 
 ## Restrições importantes
 
+- M05: `orders.total` usa `DECIMAL(20,2)` para comportar quantidade × preço sem perda; o snapshot mantém `DECIMAL(10,2)` do lote. Status Prisma/API em maiúsculas, seguindo eventos.
+- `order_items (order_id, lot_id)` é único. Relações de pedidos usam `RESTRICT` para preservar histórico financeiro; usuário, lote e pedido referenciados não podem ser apagados em cascata.
+
 - `users.email` é único.
 - `tickets.code` é único (RN-05).
 - `checkins.ticket_id` é único: o banco impede check-in duplicado, mesmo sob concorrência (RN-07).
