@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../errors/app-error.js';
 import type { CreateLotInput, UpdateLotInput } from '../schemas/lots.schema.js';
@@ -20,9 +21,7 @@ export async function listLots(eventId: number, userContext?: RequestingUserCont
   const isAdmin = userContext?.role === 'ADMIN';
 
   // Organizador (dono) ou ADMIN vê todos os lotes; público vê apenas lotes ativos
-  const whereClause = isOwner || isAdmin
-    ? { eventId }
-    : { eventId, active: true };
+  const whereClause = isOwner || isAdmin ? { eventId } : { eventId, active: true };
 
   const lots = await prisma.ticketLot.findMany({
     where: whereClause,
@@ -51,7 +50,11 @@ export async function createLot(
   const isAdmin = userRole === 'ADMIN';
 
   if (!isOwner && !isAdmin) {
-    throw new AppError(403, 'FORBIDDEN', 'Você não tem permissão para gerenciar lotes deste evento.');
+    throw new AppError(
+      403,
+      'FORBIDDEN',
+      'Você não tem permissão para gerenciar lotes deste evento.',
+    );
   }
 
   // Consistência de datas: a janela de venda do lote deve encerrar antes ou no término do evento
@@ -129,7 +132,9 @@ export async function updateLot(
   }
 
   // Revalidar datas
-  const effectiveStart = input.salesStartAt ? new Date(input.salesStartAt) : existingLot.salesStartAt;
+  const effectiveStart = input.salesStartAt
+    ? new Date(input.salesStartAt)
+    : existingLot.salesStartAt;
   const effectiveEnd = input.salesEndAt ? new Date(input.salesEndAt) : existingLot.salesEndAt;
   const eventEnd = new Date(event.endsAt);
 
@@ -164,7 +169,7 @@ export async function updateLot(
     }
   }
 
-  const updatedLot = await prisma.ticketLot.update({
+  const updateArgs = {
     where: { id: lotId },
     data: {
       ...(input.name !== undefined && { name: input.name }),
@@ -174,7 +179,38 @@ export async function updateLot(
       ...(input.salesEndAt !== undefined && { salesEndAt: effectiveEnd }),
       ...(input.active !== undefined && { active: input.active }),
     },
-  });
+  };
 
-  return updatedLot;
+  if (input.quantity !== undefined) {
+    const {quantity} = input;
+    return prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM ticket_lots WHERE id = ${lotId} FOR UPDATE`;
+        const occupied = await tx.orderItem.aggregate({
+          where: {
+            lotId,
+            order: {
+              OR: [{ status: 'PAID' }, { status: 'PENDING', expiresAt: { gt: new Date() } }],
+            },
+          },
+          _sum: { quantity: true },
+        });
+        if (quantity < (occupied._sum.quantity ?? 0)) {
+          throw new AppError(
+            409,
+            'INSUFFICIENT_STOCK',
+            'A quantidade não pode ser menor que o estoque já reservado ou vendido.',
+          );
+        }
+        return tx.ticketLot.update(updateArgs);
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        maxWait: 10000,
+        timeout: 15000,
+      },
+    );
+  }
+
+  return prisma.ticketLot.update(updateArgs);
 }

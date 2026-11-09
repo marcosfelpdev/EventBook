@@ -8,3 +8,5 @@ import * as ordersController from '../controllers/orders.controller.js';
 export const ordersRouter = Router();
 
 ordersRouter.post('/orders', authenticate, authorize(Role.BUYER), validate(createOrderSchema), ordersController.createOrder);
+ordersRouter.get('/orders/:id', authenticate, ordersController.getOrder);
+ordersRouter.post('/orders/:id/cancel', authenticate, ordersController.cancelOrder);
