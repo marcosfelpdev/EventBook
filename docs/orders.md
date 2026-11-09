@@ -1,5 +1,11 @@
 # Pedidos e reserva temporária (M05)
 
+## Testes com banco real
+
+Em `backend`, defina `TEST_DATABASE_URL` apontando para um MySQL de testes com nome terminado em `_test`. Aplique `npx prisma migrate deploy` com `DATABASE_URL` apontando para esse mesmo banco e execute `npm run test:integration`. Nunca use o banco de desenvolvimento/produção para esta suíte. O teste cria fixtures próprias e remove somente seus registros; não executa reset do banco.
+
+`npm test` mantém a suíte rápida com mocks. O CI executa ambas e fornece MySQL 8 isolado para integração, inclusive nas PRs com branches dependentes. A RN-03 testa três rodadas de 20 requisições disputando 5 ingressos, quantidades maiores sem reserva parcial e estoque já ocupado por pedidos pagos, conferindo HTTP e soma persistida.
+
 ## Consulta e cancelamento
 
 `GET /orders/:id` retorna 200 com pedido e itens, exclusivamente para o dono autenticado. Pedido inexistente ou de outra pessoa retorna 404 NOT_FOUND. A consulta atualiza reservas vencidas para EXPIRED.
