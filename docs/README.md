@@ -206,4 +206,5 @@ Todas as convenções estão em [`docs/convencoes.md`](docs/convencoes.md).
 | [Modelo de dados](docs/erd.md) | ERD, tabelas por milestone e restrições |
 | [Perfis e permissões](docs/perfis-e-permissoes.md) | Matriz de acesso por endpoint |
 | [Convenções](docs/convencoes.md) | Branches, commits, PRs, formato de erros e Definition of Done |
+| [ADR 0001](docs/adr/0001-concorrencia-e-expiracao.md) | Lock do estoque e expiração da reserva (RN-03 e RN-04) |
 | [Setup do ambiente](docs/setup-ambiente.md) | Instalação e configuração passo a passo |
