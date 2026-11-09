@@ -1,5 +1,11 @@
 # Pedidos e reserva temporária (M05)
 
+## Expiração automática
+
+Ao iniciar o servidor, o job expira pedidos PENDING com `expiresAt <= agora` e repete a cada minuto. Reutiliza a mesma função da expiração lazy; pedidos PAID/CANCELLED/EXPIRED não são alterados. A consulta de estoque ignora reservas vencidas imediatamente, mesmo antes do próximo ciclo. Não existe contador para decrementar, nem exclusão de histórico.
+
+O job não sobrepõe execuções no mesmo processo, registra falhas e tenta novamente no ciclo seguinte. SIGINT/SIGTERM interrompem o timer e aguardam operações em andamento antes de desconectar o Prisma. Importar `app` nos testes não inicia timers. A atualização condicional torna múltiplas instâncias idempotentes.
+
 ## Criar pedido
 
 `POST /orders`, autenticado como BUYER, recebe `{ "lotId": 1, "quantity": 2 }`.
