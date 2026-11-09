@@ -5,6 +5,35 @@ import type { CreateOrderInput } from '../schemas/orders.schema.js';
 
 export const RESERVATION_DURATION_MS = 15 * 60 * 1000;
 
+export async function getOrder(id: number, userId: number) {
+  const owned = await prisma.order.findFirst({ where: { id, userId }, include: { items: true } });
+  if (!owned) {
+    throw new AppError(404, 'NOT_FOUND', 'Pedido não encontrado.');
+  }
+  await prisma.order.updateMany({
+    where: { id, userId, status: 'PENDING', expiresAt: { lte: new Date() } },
+    data: { status: 'EXPIRED' },
+  });
+  return prisma.order.findFirstOrThrow({ where: { id, userId }, include: { items: true } });
+}
+
+export async function cancelOrder(id: number, userId: number) {
+  await getOrder(id, userId);
+  const now = new Date();
+  const result = await prisma.order.updateMany({
+    where: { id, userId, status: 'PENDING', expiresAt: { gt: now } },
+    data: { status: 'CANCELLED', cancelledAt: now },
+  });
+  const order = await getOrder(id, userId);
+  if (result.count === 1 || order.status === 'CANCELLED') {
+    return order;
+  }
+  if (order.status === 'EXPIRED') {
+    throw new AppError(422, 'ORDER_EXPIRED', 'A reserva deste pedido expirou.');
+  }
+  throw new AppError(409, 'ORDER_ALREADY_PAID', 'Pedidos pagos não podem ser cancelados por esta operação.');
+}
+
 export function expireOrders(
   now = new Date(),
   client: Prisma.TransactionClient = prisma,

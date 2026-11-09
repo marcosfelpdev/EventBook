@@ -1,5 +1,13 @@
 # Pedidos e reserva temporária (M05)
 
+## Consulta e cancelamento
+
+`GET /orders/:id` retorna 200 com pedido e itens, exclusivamente para o dono autenticado. Pedido inexistente ou de outra pessoa retorna 404 NOT_FOUND. A consulta atualiza reservas vencidas para EXPIRED.
+
+`POST /orders/:id/cancel` cancela somente pedido PENDING ainda válido do dono e retorna 200 com status CANCELLED e cancelledAt. Repetir o cancelamento retorna o pedido já cancelado (idempotente). A alteração condicional no banco evita sobrescrever estados concorrentes. Como itens CANCELLED não entram na soma, o estoque é liberado sem contador.
+
+Pedido vencido retorna 422 ORDER_EXPIRED; pago retorna 409 ORDER_ALREADY_PAID. Cancelamento de pagos (RN-06) pertence à M06. IDs malformados retornam 400 VALIDATION_ERROR; chamadas sem token retornam 401.
+
 ## Expiração automática
 
 Ao iniciar o servidor, o job expira pedidos PENDING com `expiresAt <= agora` e repete a cada minuto. Reutiliza a mesma função da expiração lazy; pedidos PAID/CANCELLED/EXPIRED não são alterados. A consulta de estoque ignora reservas vencidas imediatamente, mesmo antes do próximo ciclo. Não existe contador para decrementar, nem exclusão de histórico.
