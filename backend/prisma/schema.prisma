@@ -23,6 +23,7 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
 
   events       Event[]
+  orders       Order[]
 
   @@map("users")
 }
@@ -63,6 +64,47 @@ model TicketLot {
   createdAt    DateTime @default(now()) @map("created_at")
 
   event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
 
   @@map("ticket_lots")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  status      OrderStatus @default(PENDING)
+  total       Decimal     @db.Decimal(20, 2)
+  expiresAt   DateTime    @map("expires_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  paidAt      DateTime?   @map("paid_at")
+  cancelledAt DateTime?   @map("cancelled_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items       OrderItem[]
+
+  @@index([status, expiresAt])
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                Int       @id @default(autoincrement())
+  orderId           Int       @map("order_id")
+  lotId             Int       @map("lot_id")
+  quantity          Int
+  unitPriceSnapshot Decimal   @map("unit_price_snapshot") @db.Decimal(10, 2)
+
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  lot               TicketLot @relation(fields: [lotId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, lotId])
+  @@index([lotId])
+  @@map("order_items")
 }
