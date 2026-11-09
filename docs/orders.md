@@ -12,4 +12,4 @@ A reserva dura exatamente 15 minutos. Antes de calcular estoque, pedidos vencido
 
 Erros seguem `{ code, message, details? }`: 400 VALIDATION_ERROR; 401 UNAUTHENTICATED; 403 FORBIDDEN; 404 NOT_FOUND; 422 EVENT_NOT_PUBLISHED, LOT_INACTIVE ou LOT_OUT_OF_SALE_WINDOW; 409 INSUFFICIENT_STOCK (details com lotId, available e requested).
 
-A criação e seus itens usam uma transação. A proteção concorrente da ADR é adicionada na #60; esta etapa (#59) não garante exclusão entre compras simultâneas.
+A criação e seus itens usam uma transação READ COMMITTED com `SELECT ... FOR UPDATE` no lote antes de ler preço, janela e estoque. Compras do mesmo lote aguardam o lock e recalculam estoque após a reserva anterior; excedentes recebem 409. A edição da quantidade do lote usa o mesmo lock e rejeita redução abaixo dos itens pagos e reservados válidos. SQL parametrizado pelo Prisma. O teste concorrente contra MySQL real é entregue na #63.

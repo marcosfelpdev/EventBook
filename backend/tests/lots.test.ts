@@ -10,6 +10,9 @@ import { env } from '../src/config/env.js';
 
 vi.mock('../src/lib/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
+    orderItem: { aggregate: vi.fn() },
     event: {
       findUnique: vi.fn(),
     },
@@ -31,6 +34,7 @@ testApp.use(errorHandler);
 describe('Testes de integração de lotes (M04)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (fn) => (fn as (tx: typeof prisma) => Promise<unknown>)(prisma));
   });
 
   const baseEvent = {
@@ -207,6 +211,17 @@ describe('Testes de integração de lotes (M04)', () => {
       salesEndAt: new Date(Date.now() + 4 * 86400000),
       active: true,
     };
+
+    it('impede reduzir quantidade abaixo de pedidos já reservados', async () => {
+      vi.mocked(prisma.event.findUnique).mockResolvedValue({ ...baseEvent, lots: [existingLot] } as never);
+      vi.mocked(prisma.orderItem.aggregate).mockResolvedValue({ _sum: { quantity: 200 } } as never);
+      const ownerToken = jwt.sign({ sub: '10', role: Role.ORGANIZER }, env.JWT_SECRET);
+      const res = await request(testApp).patch('/events/1/lots/5')
+        .set('Authorization', `Bearer ${ownerToken}`).send({ quantity: 100 });
+      expect(res.status).toBe(409);
+      expect(prisma.ticketLot.update).not.toHaveBeenCalled();
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
 
     it('retorna 404 se o lote não existir ou não pertencer ao evento', async () => {
       vi.mocked(prisma.event.findUnique).mockResolvedValue({
