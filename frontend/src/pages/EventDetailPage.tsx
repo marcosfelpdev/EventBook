@@ -1,3 +1,4 @@
+import { Ticket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventsService } from '../services/eventsService';
@@ -81,12 +82,12 @@ export function EventDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4">
+    <div className="min-h-screen bg-[#0b1726] py-10 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <Link
             to="/events"
-            className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+            className="text-sm font-medium text-blue-400 hover:text-blue-200 transition-colors flex items-center gap-1"
           >
             ← Voltar para a lista de eventos
           </Link>
@@ -95,7 +96,7 @@ export function EventDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
-              className="text-xs font-semibold px-3 py-1.5 bg-slate-200 text-slate-800 rounded hover:bg-slate-300 transition-colors"
+              className="text-xs font-semibold px-3 py-1.5 bg-[#223a53] text-slate-100 rounded hover:bg-slate-300 transition-colors"
             >
               Painel do Organizador
             </button>
@@ -113,64 +114,64 @@ export function EventDetailPage() {
         )}
 
         {!isLoading && event && (
-          <article className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-100">
+          <article className="bg-[#122337] border border-white/10 rounded-2xl shadow-sm overflow-hidden">
+            <div className="detail-cover" aria-hidden="true"><Ticket strokeWidth={0.8} /><span>VIVA O MOMENTO. GUARDE A HISTÓRIA.</span></div><div className="p-5 sm:p-8 border-b border-white/10">
               <div className="flex flex-wrap gap-2 items-center mb-4">
                 <span
                   className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
                     event.status === 'PUBLISHED'
-                      ? 'bg-green-100 text-green-800 border border-green-200'
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                       : event.status === 'DRAFT'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                        : 'bg-red-100 text-red-800 border border-red-200'
+                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                        : 'bg-red-950 text-red-300 border border-red-900'
                   }`}
                 >
-                  {event.status}
+                  {{ PUBLISHED: 'Publicado', DRAFT: 'Rascunho', CANCELLED: 'Cancelado' }[event.status]}
                 </span>
 
-                <span className="text-xs text-slate-500 font-medium">
+                <span className="text-xs text-slate-400 font-medium">
                   Capacidade total: <strong>{event.capacity} participantes</strong>
                 </span>
               </div>
 
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">
+              <h1 className="text-3xl font-extrabold text-slate-50 tracking-tight mb-4">
                 {event.title}
               </h1>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0b1726] p-4 rounded-xl text-sm">
                 <div>
-                  <span className="block text-xs uppercase font-bold text-slate-500 mb-1">
+                  <span className="block text-xs uppercase font-bold text-slate-400 mb-1">
                     Início do Evento
                   </span>
-                  <span className="text-slate-800 font-medium">{formatDate(event.startsAt)}</span>
+                  <span className="text-slate-100 font-medium">{formatDate(event.startsAt)}</span>
                 </div>
                 <div>
-                  <span className="block text-xs uppercase font-bold text-slate-500 mb-1">
+                  <span className="block text-xs uppercase font-bold text-slate-400 mb-1">
                     Término do Evento
                   </span>
-                  <span className="text-slate-800 font-medium">{formatDate(event.endsAt)}</span>
+                  <span className="text-slate-100 font-medium">{formatDate(event.endsAt)}</span>
                 </div>
                 <div className="md:col-span-2">
-                  <span className="block text-xs uppercase font-bold text-slate-500 mb-1">
+                  <span className="block text-xs uppercase font-bold text-slate-400 mb-1">
                     Localização
                   </span>
-                  <span className="text-slate-800 font-medium">{event.location}</span>
+                  <span className="text-slate-100 font-medium">{event.location}</span>
                 </div>
               </div>
             </div>
 
-            <div className="p-8">
-              <h2 className="text-xl font-bold text-slate-800 mb-3">Sobre este Evento</h2>
-              <p className="text-slate-700 leading-relaxed whitespace-pre-line mb-8">
+            <div className="p-5 sm:p-8">
+              <h2 className="text-xl font-bold text-slate-100 mb-3">Sobre este Evento</h2>
+              <p className="text-slate-200 leading-relaxed whitespace-pre-line mb-8">
                 {event.description}
               </p>
 
               {/* Lotes e Ingressos (M04) */}
-              <section className="border-t border-slate-200 pt-8">
+              <section className="border-t border-white/10 pt-8">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Ingressos e Lotes</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <h3 className="text-lg font-bold text-slate-50">Ingressos e Lotes</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
                       Confira os lotes disponíveis para este evento.
                     </p>
                   </div>
@@ -180,7 +181,7 @@ export function EventDetailPage() {
                       <button
                         type="button"
                         onClick={() => navigate('/dashboard')}
-                        className="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                        className="text-xs font-semibold px-3 py-1.5 bg-blue-950 text-blue-300 border border-blue-800 rounded-lg hover:bg-blue-900 transition-colors"
                       >
                         Gerenciar Lotes
                       </button>
@@ -199,41 +200,41 @@ export function EventDetailPage() {
                 {!isLoadingLots && lots.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {lots.map((lot) => {
-                      const isOpen = isWithinSaleWindow(lot.salesStartAt, lot.salesEndAt);
+                      const isOpen = lot.active && isWithinSaleWindow(lot.salesStartAt, lot.salesEndAt);
                       const isSoldOut = lot.quantity === 0;
 
                       return (
                         <div
                           key={lot.id}
-                          className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-shadow shadow-sm flex flex-col justify-between"
+                          className="bg-[#122337] border border-white/10 rounded-xl p-5 hover:border-slate-600 transition-shadow shadow-sm flex flex-col justify-between"
                         >
                           <div>
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-bold text-slate-900 text-base">{lot.name}</h4>
+                              <h4 className="font-bold text-slate-50 text-base">{lot.name}</h4>
                               <span
                                 className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                                   isSoldOut
-                                    ? 'bg-red-100 text-red-700'
+                                    ? 'bg-red-950 text-red-300'
                                     : isOpen
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-slate-100 text-slate-600'
+                                      ? 'bg-emerald-950 text-emerald-300'
+                                      : 'bg-[#182d44] text-slate-300'
                                 }`}
                               >
                                 {isSoldOut ? 'Esgotado' : isOpen ? 'Vendas Abertas' : 'Encerrado'}
                               </span>
                             </div>
 
-                            <div className="text-2xl font-black text-slate-900 mb-3">
+                            <div className="text-2xl font-black text-slate-50 mb-3">
                               {formatPrice(lot.price)}
                             </div>
 
-                            <div className="space-y-1 text-xs text-slate-600">
+                            <div className="space-y-1 text-xs text-slate-300">
                               <div>
-                                <span className="font-semibold text-slate-700">Quantidade:</span>{' '}
+                                <span className="font-semibold text-slate-200">Quantidade:</span>{' '}
                                 {lot.quantity} ingressos
                               </div>
                               <div>
-                                <span className="font-semibold text-slate-700">Vendas até:</span>{' '}
+                                <span className="font-semibold text-slate-200">Vendas até:</span>{' '}
                                 {new Date(lot.salesEndAt).toLocaleDateString('pt-BR')} às{' '}
                                 {new Date(lot.salesEndAt).toLocaleTimeString('pt-BR', {
                                   hour: '2-digit',
@@ -243,14 +244,14 @@ export function EventDetailPage() {
                             </div>
                           </div>
 
-                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                             <span className="text-slate-400 italic">
-                              Compra de ingressos disponível no M05
+                              Reserva online em breve
                             </span>
                             <button
                               type="button"
                               disabled
-                              className="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-semibold cursor-not-allowed"
+                              className="px-3 py-1.5 bg-[#182d44] text-slate-400 rounded-lg text-xs font-semibold cursor-not-allowed"
                             >
                               Comprar
                             </button>
@@ -263,11 +264,11 @@ export function EventDetailPage() {
               </section>
             </div>
 
-            <footer className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+            <footer className="px-5 sm:px-8 py-4 bg-[#0b1726] border-t border-white/10 flex flex-wrap gap-3 justify-between items-center text-xs text-slate-400">
               <span>
                 Organizado por: <strong>{event.organizer?.name ?? 'Organizador'}</strong>
               </span>
-              <span>Contato: {event.organizer?.email ?? 'contato@eventbook.test'}</span>
+              <span>Contato: {event.organizer?.email ?? 'Não informado'}</span>
             </footer>
           </article>
         )}
