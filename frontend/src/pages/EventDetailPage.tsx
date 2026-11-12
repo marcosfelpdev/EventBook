@@ -1,3 +1,4 @@
+import { LotReservation } from '../components/LotReservation';
 import { Ticket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -230,7 +231,7 @@ export function EventDetailPage() {
 
                             <div className="space-y-1 text-xs text-slate-300">
                               <div>
-                                <span className="font-semibold text-slate-200">Quantidade:</span>{' '}
+                                <span className="font-semibold text-slate-200">Capacidade do lote:</span>{' '}
                                 {lot.quantity} ingressos
                               </div>
                               <div>
@@ -244,18 +245,7 @@ export function EventDetailPage() {
                             </div>
                           </div>
 
-                          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                            <span className="text-slate-400 italic">
-                              Reserva online em breve
-                            </span>
-                            <button
-                              type="button"
-                              disabled
-                              className="px-3 py-1.5 bg-[#182d44] text-slate-400 rounded-lg text-xs font-semibold cursor-not-allowed"
-                            >
-                              Comprar
-                            </button>
-                          </div>
+                          <LotReservation key={user?.id ?? "guest"} lot={lot} available={isOpen && !isSoldOut && event.status === "PUBLISHED"} />
                         </div>
                       );
                     })}

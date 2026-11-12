@@ -1,11 +1,12 @@
 import { AuthLayout } from '../components/AuthLayout';
 import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import type { ApiError } from '../services/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const { login } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -56,7 +57,8 @@ export function LoginPage() {
         return;
       }
 
-      navigate('/events');
+      const returnTo: unknown = state?.returnTo;
+      navigate(typeof returnTo === 'string' && /^\/events\/\d+$/.test(returnTo) ? returnTo : '/events');
     } catch (err: unknown) {
       const error = err as ApiError;
       setApiError(error.message || 'Erro ao realizar login.');
