@@ -18,7 +18,6 @@ export function Brand() {
       </svg>
       <span>
         Event<span className="brand-blue">Book</span>
-        <span className="brand-dot">®</span>
       </span>
     </Link>
   );

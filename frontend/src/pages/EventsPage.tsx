@@ -238,9 +238,16 @@ export function EventsPage() {
           <div className="event-grid">
             {events.map((event, index) => {
               const date = new Date(event.startsAt);
-              const past = new Date(event.endsAt) < new Date();
+              const now = new Date();
+              const past = new Date(event.endsAt) < now;
               const prices = (event.lots ?? [])
-                .filter((lot) => lot.active && lot.quantity > 0)
+                .filter(
+                  (lot) =>
+                    lot.active &&
+                    lot.quantity > 0 &&
+                    new Date(lot.salesStartAt) <= now &&
+                    now <= new Date(lot.salesEndAt),
+                )
                 .map((lot) => Number(lot.price));
               const price = prices.length ? Math.min(...prices) : undefined;
               return (
