@@ -10,7 +10,7 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   return (
-    <div role="alert" className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-4">
+    <div role="alert" className="bg-red-950/50 border border-red-900 text-red-300 p-4 rounded-lg mb-4">
       <strong className="block font-semibold mb-1">{title}</strong>
       <span className="block text-sm">{message}</span>
       {onRetry && (
