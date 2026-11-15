@@ -1,16 +1,35 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Link } from 'react-router-dom';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Search,
+  MapPin,
+  CalendarDays,
+  Ticket,
+  SlidersHorizontal,
+  Sparkles,
+  Music2,
+  Mic2,
+  Users,
+  Check,
+  X,
+} from 'lucide-react';
 import { eventsService } from '../services/eventsService';
 import type { Event } from '../types/event';
 import { Loading } from '../components/Loading';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
+import { BlurFade } from '../components/BlurFade';
+
+const suggestions = [
+  { label: 'Música', query: 'música', icon: Music2 },
+  { label: 'Festivais', query: 'festival', icon: Sparkles },
+  { label: 'Conferências', query: 'conferência', icon: Mic2 },
+  { label: 'Encontros', query: 'encontro', icon: Users },
+];
 
 export function EventsPage() {
-  const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
-
   const [events, setEvents] = useState<Event[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -18,246 +37,323 @@ export function EventsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  const [reloadKey, setReloadKey] = useState(0);
   const pageSize = 6;
 
   useEffect(() => {
+    let active = true;
     async function fetchEvents() {
       setIsLoading(true);
       setErrorMessage(null);
-
       try {
         const response = await eventsService.listEvents({
           page,
           pageSize,
           search: search || undefined,
         });
-        setEvents(response.data);
-        setTotal(response.total);
+        if (active) {
+          setEvents(response.data);
+          setTotal(response.total);
+        }
       } catch {
-        setErrorMessage('Não foi possível carregar os eventos. Verifique a conexão com a API.');
+        if (active) {
+          setErrorMessage('Não conseguimos carregar a programação. Tente novamente em instantes.');
+        }
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }
+    void fetchEvents();
+    return () => {
+      active = false;
+    };
+  }, [page, search, reloadKey]);
 
-    fetchEvents();
-  }, [page, search]);
-
+  function selectSearch(value: string) {
+    setSearchInput(value);
+    setSearch(value);
+    setPage(1);
+  }
   function handleSearchSubmit(e: FormEvent) {
     e.preventDefault();
-    setPage(1);
-    setSearch(searchInput.trim());
+    selectSearch(searchInput.trim());
   }
-
-  function handleClearSearch() {
-    setSearchInput('');
-    setSearch('');
-    setPage(1);
-  }
-
   const totalPages = Math.ceil(total / pageSize);
 
-  function formatDate(isoDate: string) {
-    const d = new Date(isoDate);
-    return d.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/events" className="text-xl font-bold text-blue-600 tracking-tight">
-            EventBook
-          </Link>
-
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <>
-                <span className="text-sm text-slate-600 hidden sm:inline">
-                  Olá, <strong className="text-slate-800">{user?.name}</strong> ({user?.role})
-                </span>
-
-                {(user?.role === 'ORGANIZER' || user?.role === 'ADMIN') && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/dashboard')}
-                    className="px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
-                  >
-                    Painel do Organizador
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 border border-slate-300 rounded hover:bg-slate-200 transition-colors"
-                >
-                  Sair
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-                >
-                  Entrar
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                >
-                  Cadastre-se
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Próximos Eventos
+    <main>
+      <section className="hero site-container">
+        <div className="hero-copy">
+          <BlurFade>
+            <span className="eyebrow">
+              <span className="status-dot" /> MAIS ENCONTROS. MAIS HISTÓRIAS.
+            </span>
+            <h1>
+              O próximo grande
+              <br />
+              momento começa
+              <br />
+              <span>aqui.</span>
+              <svg className="hero-star" viewBox="0 0 60 60" aria-hidden="true">
+                <path
+                  d="M30 0v60M0 30h60M9 9l42 42M9 51 42 9"
+                  stroke="currentColor"
+                  strokeWidth="5"
+                />
+              </svg>
             </h1>
-            <p className="text-slate-600 text-sm mt-1">
-              Explore palestras, festivais e conferências disponíveis para reserva.
+            <p>
+              De um show inesquecível a uma ideia que muda tudo.
+              <br className="desktop-only" /> Descubra experiências que combinam com você.
+            </p>
+            <div className="hero-buttons">
+              <a href="#eventos" className="button-primary">
+                Encontrar meu próximo evento <ArrowUpRight size={18} />
+              </a>
+              <span className="hero-note">
+                <Ticket size={18} /> Sua próxima boa história.
+              </span>
+            </div>
+          </BlurFade>
+        </div>
+        <BlurFade delay={0.15} className="hero-visual">
+          <div className="hero-image">
+            <img
+              src="/images/live-music.jpg"
+              alt="Público e luzes coloridas em um show de música ao vivo"
+              fetchPriority="high"
+            />
+            <span className="image-caption">
+              <span className="status-dot" /> EXPERIÊNCIAS QUE FICAM
+            </span>
+            <div className="image-bottom">
+              <span>
+                Menos tela.
+                <br />
+                <strong>Mais presença.</strong>
+              </span>
+              <span className="round-arrow">
+                <ArrowUpRight size={28} />
+              </span>
+            </div>
+          </div>
+          <div className="floating-ticket">
+            <div className="ticket-symbol">
+              <Ticket size={25} />
+            </div>
+            <div>
+              <strong>Você faz parte dessa história.</strong>
+              <span>Encontre. Reserve. Viva.</span>
+            </div>
+            <span className="ticket-check">
+              <Check size={17} />
+            </span>
+          </div>
+          <span className="visual-coordinate">EVENTBOOK — VIVA O AGORA</span>
+        </BlurFade>
+      </section>
+      <section className="discovery site-container" aria-label="Pesquisar eventos">
+        <form onSubmit={handleSearchSubmit} className="discovery-search">
+          <Search size={21} />
+          <label className="sr-only" htmlFor="event-search">
+            Buscar por evento ou cidade
+          </label>
+          <input
+            id="event-search"
+            placeholder="Qual vai ser a sua próxima experiência?"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+          <button className="button-primary" type="submit">
+            Explorar <ArrowRight size={17} />
+          </button>
+        </form>
+        <div className="discovery-shortcuts">
+          <span>Explore por interesse</span>
+          <button
+            className={!search ? 'category active' : 'category'}
+            onClick={() => selectSearch('')}
+          >
+            <Ticket size={16} /> Todos
+          </button>
+          {suggestions.map(({ label, query, icon: Icon }) => (
+            <button
+              key={query}
+              onClick={() => selectSearch(query)}
+              className={search === query ? 'category active' : 'category'}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section id="eventos" className="catalog site-container">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">ESCOLHA SEU PRÓXIMO MOMENTO</span>
+            <h2>
+              {search ? 'Resultados da sua busca' : 'Próximos eventos'}
+              <span className="heading-dot">.</span>
+            </h2>
+            <p>
+              {search
+                ? 'Buscando por “' + search + '”'
+                : 'Uma nova experiência está esperando por você.'}
             </p>
           </div>
-
-          <form onSubmit={handleSearchSubmit} className="flex gap-2 w-full md:w-auto">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Buscar por nome ou cidade..."
-              className="px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 w-full md:w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
-            >
-              Buscar
-            </button>
-            {search && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="px-3 py-2 bg-slate-200 text-slate-700 text-sm font-medium rounded hover:bg-slate-300 transition-colors"
-              >
-                Limpar
-              </button>
-            )}
-          </form>
+          <span className="catalog-filter">
+            <SlidersHorizontal size={16} />
+            {isLoading ? 'Carregando programação' : total + ' eventos na programação'}
+          </span>
         </div>
-
-        {/* Status Handling */}
-        {isLoading && <Loading message="Buscando eventos disponíveis..." />}
-
+        {search && (
+          <button className="clear-search" onClick={() => selectSearch('')}>
+            Limpar busca <X size={14} />
+          </button>
+        )}
+        {isLoading && <Loading message="Encontrando novas experiências..." />}
         {!isLoading && errorMessage && (
           <ErrorState
-            title="Falha ao carregar eventos"
+            title="A programação não carregou"
             message={errorMessage}
-            onRetry={() => setPage(page)}
+            onRetry={() => setReloadKey((value) => value + 1)}
           />
         )}
-
         {!isLoading && !errorMessage && events.length === 0 && (
           <EmptyState
-            title="Nenhum evento encontrado"
+            title="Nenhum evento por aqui, por enquanto"
             description={
               search
-                ? `Nenhum evento corresponde à busca "${search}".`
-                : 'Não há eventos publicados no momento.'
+                ? 'Tente outro nome, interesse ou cidade para descobrir novas experiências.'
+                : 'Novos encontros serão publicados por aqui. Volte em breve.'
             }
-            actionLabel={search ? 'Ver todos os eventos' : undefined}
-            onAction={search ? handleClearSearch : undefined}
+            actionLabel={search ? 'Limpar busca' : undefined}
+            onAction={() => selectSearch('')}
           />
         )}
-
-        {!isLoading && !errorMessage && events.length > 0 && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => (
-                <article
-                  key={event.id}
-                  className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="p-6">
-                    <div className="flex justify-between items-start gap-2 mb-2">
-                      <span className="text-xs font-semibold px-2 py-0.5 bg-green-50 text-green-700 rounded-full border border-green-200">
-                        {event.capacity} vagas
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">
-                        {formatDate(event.startsAt)}
-                      </span>
-                    </div>
-
-                    <h2 className="text-xl font-bold text-slate-800 line-clamp-1 mb-2">
-                      {event.title}
-                    </h2>
-
-                    <p className="text-sm text-slate-600 line-clamp-3 mb-4">
-                      {event.description}
-                    </p>
-
-                    <div className="text-xs text-slate-500 flex items-center gap-1">
-                      <span className="font-semibold text-slate-700">Local:</span> {event.location}
-                    </div>
-                  </div>
-
-                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                    <span className="text-xs text-slate-500">
-                      Org: {event.organizer?.name ?? 'Organizador'}
-                    </span>
+        {!isLoading && !errorMessage && (
+          <div className="event-grid">
+            {events.map((event, index) => {
+              const date = new Date(event.startsAt);
+              const now = new Date();
+              const past = new Date(event.endsAt) < now;
+              const prices = (event.lots ?? [])
+                .filter(
+                  (lot) =>
+                    lot.active &&
+                    lot.quantity > 0 &&
+                    new Date(lot.salesStartAt) <= now &&
+                    now <= new Date(lot.salesEndAt),
+                )
+                .map((lot) => Number(lot.price));
+              const price = prices.length ? Math.min(...prices) : undefined;
+              return (
+                <BlurFade key={event.id} delay={index * 0.06}>
+                  <article className="event-card">
                     <Link
-                      to={`/events/${event.id}`}
-                      className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      to={'/events/' + event.id}
+                      className={'event-poster poster-' + (event.id % 3)}
+                      aria-label={'Ver ' + event.title}
                     >
-                      Ver Detalhes →
+                      <span className="poster-label">EVENTBOOK APRESENTA</span>
+                      <Ticket className="poster-icon" strokeWidth={0.7} aria-hidden="true" />
+                      <span className="poster-title">{event.title}</span>
+                      <span className="poster-date">
+                        <strong>{date.toLocaleDateString('pt-BR', { day: '2-digit' })}</strong>
+                        {date
+                          .toLocaleDateString('pt-BR', { month: 'short' })
+                          .replace('.', '')
+                          .toUpperCase()}
+                      </span>
+                      <span className="poster-status">
+                        {past ? 'Evento encerrado' : 'Para viver de perto'}
+                      </span>
                     </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center items-center gap-4">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="px-4 py-2 border border-slate-300 rounded text-sm font-medium bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-colors"
-                >
-                  Anterior
-                </button>
-                <span className="text-sm text-slate-600">
-                  Página <strong>{page}</strong> de <strong>{totalPages}</strong> (Total: {total})
-                </span>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="px-4 py-2 border border-slate-300 rounded text-sm font-medium bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-colors"
-                >
-                  Próxima
-                </button>
-              </div>
-            )}
-          </>
+                    <div className="event-info">
+                      <span className="event-date">
+                        <CalendarDays size={14} />
+                        {date.toLocaleDateString('pt-BR', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: 'long',
+                        })}{' '}
+                        · {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <h3>
+                        <Link to={'/events/' + event.id}>{event.title}</Link>
+                      </h3>
+                      <p>
+                        <MapPin size={15} />
+                        {event.location}
+                      </p>
+                    </div>
+                    <div className="event-card-footer">
+                      <div>
+                        <span>
+                          {past
+                            ? 'Programação anterior'
+                            : price === undefined
+                              ? 'Confira a programação'
+                              : 'Ingressos a partir de'}
+                        </span>
+                        {!past && price !== undefined && (
+                          <strong>
+                            {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </strong>
+                        )}
+                      </div>
+                      <Link
+                        to={'/events/' + event.id}
+                        className="event-link"
+                        aria-label={'Ver detalhes de ' + event.title}
+                      >
+                        <ArrowUpRight size={22} />
+                      </Link>
+                    </div>
+                  </article>
+                </BlurFade>
+              );
+            })}
+          </div>
         )}
-      </main>
-    </div>
+        {!isLoading && !errorMessage && totalPages > 1 && (
+          <nav className="pagination" aria-label="Paginação">
+            <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="button-ghost">
+              Anterior
+            </button>
+            <span>
+              Página {page} de {totalPages}
+            </span>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+              className="button-ghost"
+            >
+              Próxima
+            </button>
+          </nav>
+        )}
+      </section>
+      <section className="organizer-banner site-container">
+        <div className="organizer-decoration" aria-hidden="true">
+          <Ticket size={140} strokeWidth={0.8} />
+        </div>
+        <div>
+          <span className="eyebrow">DO SEU JEITO. COM A SUA MARCA.</span>
+          <h2>
+            Grandes encontros
+            <br />
+            começam com uma ideia.
+          </h2>
+          <p>Seu evento merece acontecer. Dê o próximo passo.</p>
+        </div>
+        <Link to="/dashboard" className="button-light">
+          Acessar área do organizador <ArrowUpRight size={18} />
+        </Link>
+      </section>
+    </main>
   );
 }

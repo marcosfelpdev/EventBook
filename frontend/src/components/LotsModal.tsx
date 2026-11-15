@@ -210,38 +210,38 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200">
+      <div className="bg-[#122337] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-white/10">
         {/* Header */}
-        <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+        <div className="flex justify-between items-start pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+              <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-900 text-blue-200">
                 Gestão de Lotes
               </span>
-              <span className="text-xs text-slate-500 font-mono">ID: {event.id}</span>
+              <span className="text-xs text-slate-400 font-mono">ID: {event.id}</span>
             </div>
-            <h2 className="text-xl font-bold text-slate-900">{event.title}</h2>
+            <h2 className="text-xl font-bold text-slate-50">{event.title}</h2>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none p-1"
+            className="text-slate-400 hover:text-slate-300 text-2xl font-bold leading-none p-1"
           >
             ×
           </button>
         </div>
 
         {/* Capacity Bar */}
-        <div className="my-5 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-          <div className="flex justify-between text-xs font-semibold text-slate-700 mb-2">
+        <div className="my-5 p-4 bg-[#0b1726] border border-white/10 rounded-xl">
+          <div className="flex justify-between text-xs font-semibold text-slate-200 mb-2">
             <span>Alocação de Capacidade</span>
             <span>
               {totalAllocated} de {event.capacity} ingressos ({capacityPercent}%)
             </span>
           </div>
 
-          <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-[#223a53] rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${
                 capacityPercent >= 100 ? 'bg-amber-500' : 'bg-blue-600'
@@ -250,7 +250,7 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
             />
           </div>
 
-          <div className="flex justify-between text-[11px] text-slate-500 mt-2">
+          <div className="flex justify-between text-[11px] text-slate-400 mt-2">
             <span>Disponível para novos lotes: <strong>{remainingCapacity} ingressos</strong></span>
             <span>Capacidade máxima do evento: <strong>{event.capacity}</strong></span>
           </div>
@@ -260,44 +260,44 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
         {isFormOpen && (
           <form
             onSubmit={handleSubmitLot}
-            className="mb-6 p-5 bg-blue-50/50 border border-blue-200 rounded-xl"
+            className="mb-6 p-5 bg-blue-950/50 border border-blue-800 rounded-xl"
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-50">
                 {editingLot ? `Editar Lote: ${editingLot.name}` : 'Cadastrar Novo Lote'}
               </h3>
               <button
                 type="button"
                 onClick={closeLotForm}
-                className="text-xs text-slate-500 hover:text-slate-700"
+                className="text-xs text-slate-400 hover:text-slate-200"
               >
                 Cancelar
               </button>
             </div>
 
             {formApiError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
+              <div className="mb-4 p-3 bg-red-950/50 border border-red-900 rounded-lg text-xs text-red-300 font-medium">
                 {formApiError}
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">Nome do Lote *</label>
+                <label className="block font-semibold text-slate-200 mb-1">Nome do Lote *</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: 1º Lote - Pista"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.name && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.name}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.name}</span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Preço (R$) *</label>
+                <label className="block font-semibold text-slate-200 mb-1">Preço (R$) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -305,15 +305,15 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.price && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.price}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.price}</span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-200 mb-1">
                   Quantidade de Ingressos *
                 </label>
                 <input
@@ -322,44 +322,44 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="Ex: 100"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.quantity && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">
+                  <span className="text-red-400 text-[11px] mt-0.5 block">
                     {formErrors.quantity}
                   </span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-200 mb-1">
                   Início das Vendas *
                 </label>
                 <input
                   type="datetime-local"
                   value={salesStartAt}
                   onChange={(e) => setSalesStartAt(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.salesStartAt && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">
+                  <span className="text-red-400 text-[11px] mt-0.5 block">
                     {formErrors.salesStartAt}
                   </span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-200 mb-1">
                   Término das Vendas *
                 </label>
                 <input
                   type="datetime-local"
                   value={salesEndAt}
                   onChange={(e) => setSalesEndAt(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.salesEndAt && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">
+                  <span className="text-red-400 text-[11px] mt-0.5 block">
                     {formErrors.salesEndAt}
                   </span>
                 )}
@@ -371,9 +371,9 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
                   id="lotActive"
                   checked={active}
                   onChange={(e) => setActive(e.target.checked)}
-                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-slate-600 text-blue-400 focus:ring-blue-500"
                 />
-                <label htmlFor="lotActive" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                <label htmlFor="lotActive" className="text-xs font-semibold text-slate-200 cursor-pointer">
                   Lote ativo (visível para o público e disponível para compra)
                 </label>
               </div>
@@ -383,7 +383,7 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
               <button
                 type="button"
                 onClick={closeLotForm}
-                className="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50"
+                className="px-3 py-1.5 text-xs font-semibold text-slate-300 border border-slate-600 rounded-lg hover:bg-[#0b1726]"
               >
                 Cancelar
               </button>
@@ -400,7 +400,7 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
 
         {/* Action Header */}
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-bold text-slate-800">
+          <h3 className="text-sm font-bold text-slate-100">
             Lotes Cadastrados ({lots.length})
           </h3>
 
@@ -419,17 +419,17 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
         {isLoading && <Loading message="Carregando lotes do evento..." />}
 
         {!isLoading && errorMessage && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center text-xs text-red-700">
+          <div className="p-4 bg-red-950/50 border border-red-900 rounded-xl text-center text-xs text-red-300">
             {errorMessage}
           </div>
         )}
 
         {!isLoading && !errorMessage && lots.length === 0 && (
-          <div className="p-8 border border-dashed border-slate-300 rounded-xl text-center bg-slate-50/50">
-            <p className="text-sm font-medium text-slate-700 mb-1">
+          <div className="p-8 border border-dashed border-slate-600 rounded-xl text-center bg-[#0b1726]/50">
+            <p className="text-sm font-medium text-slate-200 mb-1">
               Nenhum lote cadastrado para este evento.
             </p>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-slate-400 mb-4">
               Eventos precisam de pelo menos 1 lote cadastrado para serem publicados (RN-01).
             </p>
             <button
@@ -443,9 +443,9 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
         )}
 
         {!isLoading && !errorMessage && lots.length > 0 && (
-          <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-100 font-semibold text-slate-600 border-b border-slate-200">
+          <div className="border border-white/10 rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-left text-xs text-slate-200">
+              <thead className="bg-[#182d44] font-semibold text-slate-300 border-b border-white/10">
                 <tr>
                   <th className="px-4 py-3">Lote</th>
                   <th className="px-4 py-3">Preço</th>
@@ -455,19 +455,19 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/10">
                 {lots.map((lot) => (
-                  <tr key={lot.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-slate-900">
+                  <tr key={lot.id} className="hover:bg-[#0b1726] transition-colors">
+                    <td className="px-4 py-3 font-semibold text-slate-50">
                       {lot.name}
                     </td>
-                    <td className="px-4 py-3 font-mono font-medium text-slate-900">
+                    <td className="px-4 py-3 font-mono font-medium text-slate-50">
                       {formatCurrency(lot.price)}
                     </td>
                     <td className="px-4 py-3 font-mono">
                       {lot.quantity}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 text-[11px] leading-relaxed">
+                    <td className="px-4 py-3 text-slate-400 text-[11px] leading-relaxed">
                       <div>De: {formatDateTime(lot.salesStartAt)}</div>
                       <div>Até: {formatDateTime(lot.salesEndAt)}</div>
                     </td>
@@ -477,8 +477,8 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
                         onClick={() => handleToggleActive(lot)}
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider cursor-pointer transition-colors ${
                           lot.active
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                            ? 'bg-emerald-950 text-emerald-300 hover:bg-green-200'
+                            : 'bg-[#223a53] text-slate-300 hover:bg-slate-300'
                         }`}
                         title="Clique para alternar o status ativo/inativo"
                       >
@@ -489,7 +489,7 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
                       <button
                         type="button"
                         onClick={() => openEditLotForm(lot)}
-                        className="px-2 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
+                        className="px-2 py-1 text-xs font-semibold bg-[#182d44] hover:bg-[#223a53] text-slate-200 rounded border border-slate-600 transition-colors"
                       >
                         Editar
                       </button>
@@ -502,11 +502,11 @@ export function LotsModal({ event, onClose, onLotsChanged }: LotsModalProps) {
         )}
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+        <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg transition-colors"
+            className="px-4 py-2 bg-[#182d44] hover:bg-[#223a53] text-slate-100 text-xs font-semibold rounded-lg transition-colors"
           >
             Fechar
           </button>

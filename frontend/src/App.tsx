@@ -7,11 +7,14 @@ import { EventsPage } from './pages/EventsPage';
 import { EventDetailPage } from './pages/EventDetailPage';
 import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { ROLES } from './types/auth';
+import { SiteHeader } from './components/SiteHeader';
+import { SiteFooter } from './components/SiteFooter';
 
 export function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SiteHeader />
         <Routes>
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/:id" element={<EventDetailPage />} />
@@ -41,6 +44,7 @@ export function App() {
 
           <Route path="*" element={<Navigate to="/events" replace />} />
         </Routes>
+        <SiteFooter />
       </BrowserRouter>
     </AuthProvider>
   );

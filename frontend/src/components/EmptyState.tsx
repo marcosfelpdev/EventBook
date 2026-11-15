@@ -12,9 +12,9 @@ export function EmptyState({
   onAction,
 }: EmptyStateProps) {
   return (
-    <div className="text-center py-10 px-6 border border-dashed border-slate-300 rounded-lg bg-slate-50 text-slate-700">
+    <div className="text-center py-10 px-6 border border-dashed border-slate-600 rounded-lg bg-[#0b1726] text-slate-200">
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-sm text-slate-500 mb-4">{description}</p>
+      <p className="text-sm text-slate-400 mb-4">{description}</p>
       {actionLabel && onAction && (
         <button
           type="button"

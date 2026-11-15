@@ -1,6 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { eventsService } from '../services/eventsService';
 import type { Event, CreateEventPayload, UpdateEventPayload } from '../types/event';
 import type { ApiError } from '../services/api';
@@ -11,7 +10,6 @@ import { LotsModal } from '../components/LotsModal';
 
 export function OrganizerDashboardPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
 
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -230,46 +228,14 @@ export function OrganizerDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top Navigation Bar */}
-      <header className="bg-slate-900 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <Link to="/events" className="text-xl font-bold tracking-tight text-white hover:text-slate-200">
-              EventBook
-            </Link>
-            <span className="text-xs bg-blue-600 px-2.5 py-1 rounded font-semibold uppercase tracking-wider">
-              Painel do Organizador
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-300">
-              {user?.name} ({user?.role})
-            </span>
-            <Link
-              to="/events"
-              className="px-3 py-1.5 text-xs font-medium text-slate-300 border border-slate-700 rounded hover:bg-slate-800 transition-colors"
-            >
-              Vitrine Pública
-            </Link>
-            <button
-              type="button"
-              onClick={logout}
-              className="px-3 py-1.5 text-xs font-medium bg-red-600 rounded hover:bg-red-700 transition-colors"
-            >
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#0b1726]">
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="site-container py-10"><span className="eyebrow mb-3">SEU PALCO, SUAS POSSIBILIDADES</span>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Gerenciamento de Eventos</h1>
-            <p className="text-sm text-slate-600 mt-1">
+            <h1 className="text-2xl font-bold text-slate-50">Gerenciamento de Eventos</h1>
+            <p className="text-sm text-slate-300 mt-1">
               Crie novos eventos, configure lotes de ingressos e publique para os participantes.
             </p>
           </div>
@@ -283,13 +249,13 @@ export function OrganizerDashboardPage() {
           </button>
         </div>
 
-        {/* Action Feedback Banner */}
+        <div className="dashboard-stats"><div><span>Eventos carregados</span><strong>{events.length}</strong></div><div><span>Publicados</span><strong>{events.filter((event) => event.status === 'PUBLISHED').length}</strong></div><div><span>Rascunhos</span><strong>{events.filter((event) => event.status === 'DRAFT').length}</strong></div></div>
         {actionFeedback && (
           <div
             className={`mb-6 p-4 rounded-xl border text-sm flex justify-between items-center ${
               actionFeedback.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-red-50 border-red-200 text-red-800'
+                ? 'bg-emerald-950 border-emerald-800 text-emerald-300'
+                : 'bg-red-950/50 border-red-900 text-red-300'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -329,9 +295,9 @@ export function OrganizerDashboardPage() {
         )}
 
         {!isLoading && !errorMessage && events.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-100 text-xs uppercase font-semibold text-slate-600 border-b border-slate-200">
+          <div className="bg-[#122337] border border-white/10 rounded-xl overflow-x-auto shadow-sm">
+            <table className="w-full text-left text-sm text-slate-200">
+              <thead className="bg-[#182d44] text-xs uppercase font-semibold text-slate-300 border-b border-white/10">
                 <tr>
                   <th className="px-6 py-4">Evento</th>
                   <th className="px-6 py-4">Status</th>
@@ -340,33 +306,33 @@ export function OrganizerDashboardPage() {
                   <th className="px-6 py-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/10">
                 {events.map((event) => {
                   const isPublishing = publishingEventId === event.id;
 
                   return (
-                    <tr key={event.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-semibold text-slate-900">
+                    <tr key={event.id} className="hover:bg-[#0b1726] transition-colors">
+                      <td className="px-6 py-4 font-semibold text-slate-50">
                         <div>{event.title}</div>
-                        <div className="text-xs text-slate-500 font-normal">{event.location}</div>
+                        <div className="text-xs text-slate-400 font-normal">{event.location}</div>
                       </td>
                       <td className="px-6 py-4">
                         <span
                           className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                             event.status === 'PUBLISHED'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-emerald-950 text-emerald-300'
                               : event.status === 'DRAFT'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-red-100 text-red-800'
+                                ? 'bg-amber-950 text-amber-300'
+                                : 'bg-red-950 text-red-300'
                           }`}
                         >
-                          {event.status}
+                          {{ PUBLISHED: 'Publicado', DRAFT: 'Rascunho', CANCELLED: 'Cancelado' }[event.status]}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-600 font-mono">
+                      <td className="px-6 py-4 text-slate-300 font-mono">
                         {event.capacity}
                       </td>
-                      <td className="px-6 py-4 text-slate-600 font-mono text-xs">
+                      <td className="px-6 py-4 text-slate-300 font-mono text-xs">
                         {formatDate(event.startsAt)}
                       </td>
                       <td className="px-6 py-4 text-right space-x-1.5 whitespace-nowrap">
@@ -395,7 +361,7 @@ export function OrganizerDashboardPage() {
                         <button
                           type="button"
                           onClick={() => openEditModal(event)}
-                          className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors"
+                          className="px-2.5 py-1 text-xs font-semibold bg-[#182d44] hover:bg-[#223a53] text-slate-200 rounded border border-slate-600 transition-colors"
                         >
                           Editar
                         </button>
@@ -403,7 +369,7 @@ export function OrganizerDashboardPage() {
                         <button
                           type="button"
                           onClick={() => navigate(`/events/${event.id}`)}
-                          className="px-2.5 py-1 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200 transition-colors"
+                          className="px-2.5 py-1 text-xs font-semibold bg-blue-950 hover:bg-blue-900 text-blue-300 rounded border border-blue-800 transition-colors"
                         >
                           Ver
                         </button>
@@ -429,119 +395,119 @@ export function OrganizerDashboardPage() {
       {/* Modal de Criação / Edição de Evento */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl border border-slate-200">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900">
+          <div className="bg-[#122337] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl border border-white/10">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
+              <h2 className="text-xl font-bold text-slate-50">
                 {editingEvent ? 'Editar Evento' : 'Novo Evento'}
               </h2>
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-300 text-lg font-bold"
               >
                 ✕
               </button>
             </div>
 
             {formApiError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
+              <div className="mb-4 p-3 bg-red-950/50 border border-red-900 rounded-lg text-xs text-red-300 font-medium">
                 {formApiError}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Título do Evento *</label>
+                <label className="block font-semibold text-slate-200 mb-1">Título do Evento *</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Festival de Verão 2026"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.title && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.title}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.title}</span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Descrição Completa *</label>
+                <label className="block font-semibold text-slate-200 mb-1">Descrição Completa *</label>
                 <textarea
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Descreva as atrações, programação e detalhes do evento..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.description && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.description}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.description}</span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Localização *</label>
+                <label className="block font-semibold text-slate-200 mb-1">Localização *</label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Ex: Arena Centro, São Paulo - SP"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.location && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.location}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.location}</span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Capacidade Total *</label>
+                <label className="block font-semibold text-slate-200 mb-1">Capacidade Total *</label>
                 <input
                   type="number"
                   min="1"
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
                   placeholder="Ex: 500"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.capacity && (
-                  <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.capacity}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.capacity}</span>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Início *</label>
+                  <label className="block font-semibold text-slate-200 mb-1">Início *</label>
                   <input
                     type="datetime-local"
                     value={startsAt}
                     onChange={(e) => setStartsAt(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {formErrors.startsAt && (
-                    <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.startsAt}</span>
+                    <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.startsAt}</span>
                   )}
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Término *</label>
+                  <label className="block font-semibold text-slate-200 mb-1">Término *</label>
                   <input
                     type="datetime-local"
                     value={endsAt}
                     onChange={(e) => setEndsAt(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {formErrors.endsAt && (
-                    <span className="text-red-600 text-[11px] mt-0.5 block">{formErrors.endsAt}</span>
+                    <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.endsAt}</span>
                   )}
                 </div>
               </div>
 
               {editingEvent && (
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Status</label>
+                  <label className="block font-semibold text-slate-200 mb-1">Status</label>
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as 'DRAFT' | 'PUBLISHED' | 'CANCELLED')}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="DRAFT">DRAFT (Rascunho)</option>
                     <option value="PUBLISHED">PUBLISHED (Publicado)</option>
@@ -550,11 +516,11 @@ export function OrganizerDashboardPage() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+              <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2 border border-slate-600 text-slate-200 text-xs font-semibold rounded-lg hover:bg-[#0b1726] transition-colors"
                 >
                   Cancelar
                 </button>
