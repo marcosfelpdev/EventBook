@@ -6,6 +6,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { EventsPage } from './pages/EventsPage';
 import { EventDetailPage } from './pages/EventDetailPage';
 import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
+import { StaffCheckinPage } from './pages/StaffCheckinPage';
 import { ROLES } from './types/auth';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteFooter } from './components/SiteFooter';
@@ -35,9 +36,7 @@ export function App() {
             path="/checkin"
             element={
               <PrivateRoute allowedRoles={[ROLES.STAFF, ROLES.ADMIN]}>
-                <h1 className="text-center text-2xl font-bold text-slate-800 mt-12">
-                  Área de Staff / Check-in
-                </h1>
+                <StaffCheckinPage />
               </PrivateRoute>
             }
           />

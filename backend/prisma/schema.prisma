@@ -24,6 +24,8 @@ model User {
 
   events       Event[]
   orders       Order[]
+  eventStaff   EventStaff[]
+  checkins     Checkin[]
 
   @@map("users")
 }
@@ -48,6 +50,8 @@ model Event {
 
   organizer   User        @relation(fields: [organizerId], references: [id])
   lots        TicketLot[]
+  tickets     Ticket[]
+  staff       EventStaff[]
 
   @@map("events")
 }
@@ -65,6 +69,7 @@ model TicketLot {
 
   event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   orderItems   OrderItem[]
+  tickets      Ticket[]
 
   @@map("ticket_lots")
 }
@@ -88,6 +93,7 @@ model Order {
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   items       OrderItem[]
+  tickets     Ticket[]
 
   @@index([status, expiresAt])
   @@index([userId])
@@ -107,4 +113,55 @@ model OrderItem {
   @@unique([orderId, lotId])
   @@index([lotId])
   @@map("order_items")
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+}
+
+model Ticket {
+  id          Int         @id @default(autoincrement())
+  orderId     Int         @map("order_id")
+  lotId       Int         @map("lot_id")
+  eventId     Int         @map("event_id")
+  code        String      @unique
+  status      TicketStatus @default(VALID)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  usedAt      DateTime?   @map("used_at")
+
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  lot         TicketLot   @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  checkin     Checkin?    @relation("TicketCheckin")
+
+  @@index([eventId])
+  @@index([lotId])
+  @@index([status])
+  @@map("tickets")
+}
+
+model EventStaff {
+  id        Int   @id @default(autoincrement())
+  eventId   Int   @map("event_id")
+  userId    Int   @map("user_id")
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, userId])
+  @@map("event_staff")
+}
+
+model Checkin {
+  id            Int      @id @default(autoincrement())
+  ticketId      Int      @map("ticket_id") @unique
+  staffId       Int      @map("staff_id")
+  checkedInAt   DateTime @default(now()) @map("checked_in_at")
+
+  ticket        Ticket   @relation("TicketCheckin", fields: [ticketId], references: [id], onDelete: Restrict)
+  staff         User     @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@map("checkins")
 }
