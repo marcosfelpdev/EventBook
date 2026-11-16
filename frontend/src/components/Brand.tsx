@@ -1,8 +1,16 @@
 import { Link } from 'react-router-dom';
 
-export function Brand() {
+interface BrandProps {
+  className?: string;
+}
+
+export function Brand({ className }: BrandProps) {
   return (
-    <Link to="/events" className="brand" aria-label="EventBook — início">
+    <Link
+      to="/events"
+      className={className ? `brand ${className}` : 'brand'}
+      aria-label="EventBook — início"
+    >
       <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
         <path
           d="M5 9h30v6a5 5 0 0 0 0 10v6H5v-6a5 5 0 0 0 0-10V9Z"
