@@ -391,7 +391,25 @@ async function main() {
   }),
 );
 
-  console.log('Seed de usuários, eventos e lotes executado com sucesso.');
+  // Vincula o usuário staff aos eventos publicados do organizador principal (para check-in)
+  const staffUsers = await prisma.user.findMany({
+    where: { email: { contains: 'staff' } },
+  });
+  const publishedEvents = await prisma.event.findMany({
+    where: { status: EventStatus.PUBLISHED },
+  });
+
+  for (const staff of staffUsers) {
+    for (const event of publishedEvents) {
+      await prisma.eventStaff.upsert({
+        where: { eventId_userId: { eventId: event.id, userId: staff.id } },
+        update: {},
+        create: { eventId: event.id, userId: staff.id },
+      });
+    }
+  }
+
+  console.log('Seed de usuários, eventos, lotes e equipe executado com sucesso.');
 }
 
 main()

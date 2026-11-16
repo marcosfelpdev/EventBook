@@ -8,6 +8,7 @@ export function SiteHeader() {
   const { user, isAuthenticated, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const organizer = user?.role === 'ORGANIZER' || user?.role === 'ADMIN';
+  const staff = user?.role === 'STAFF' || user?.role === 'ADMIN';
   return (
     <header className="site-header">
       <div className="site-container header-inner">
@@ -17,6 +18,11 @@ export function SiteHeader() {
           <Link to={organizer ? '/dashboard' : '/login'}>
             Área do organizador <ArrowUpRight size={14} />
           </Link>
+          {staff && (
+            <Link to="/checkin">
+              Check-in <ArrowUpRight size={14} />
+            </Link>
+          )}
         </nav>
         <div className="header-actions">
           {isAuthenticated ? (
@@ -55,6 +61,11 @@ export function SiteHeader() {
           <Link onClick={() => setOpen(false)} to={organizer ? '/dashboard' : '/login'}>
             Área do organizador
           </Link>
+          {staff && (
+            <Link onClick={() => setOpen(false)} to="/checkin">
+              Check-in
+            </Link>
+          )}
           {!isAuthenticated && (
             <Link onClick={() => setOpen(false)} to="/login">
               Entrar na minha conta
