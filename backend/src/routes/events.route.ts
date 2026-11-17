@@ -4,10 +4,17 @@ import { validate } from '../middlewares/validate.middleware.js';
 import { authenticate, optionalAuthenticate, authorize } from '../middlewares/auth.middleware.js';
 import { createEventSchema, updateEventSchema } from '../schemas/events.schema.js';
 import * as eventsController from '../controllers/events.controller.js';
+import * as occupancyController from '../controllers/occupancy.controller.js';
 
 export const eventsRouter = Router();
 
 eventsRouter.get('/events', eventsController.listEvents);
+eventsRouter.get(
+  '/events/:id/occupancy',
+  authenticate,
+  authorize(Role.ORGANIZER, Role.ADMIN),
+  occupancyController.getOccupancy,
+);
 eventsRouter.get('/events/:id', optionalAuthenticate, eventsController.getEvent);
 eventsRouter.post(
   '/events',

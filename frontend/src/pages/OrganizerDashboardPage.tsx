@@ -8,6 +8,7 @@ import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
 import { LotsModal } from '../components/LotsModal';
 import { StaffModal } from '../components/StaffModal';
+import { OccupancyModal } from '../components/OccupancyModal';
 
 export function OrganizerDashboardPage() {
   const navigate = useNavigate();
@@ -37,6 +38,9 @@ export function OrganizerDashboardPage() {
 
   // Staff management state
   const [managingStaffEvent, setManagingStaffEvent] = useState<Event | null>(null);
+
+  // Occupancy metrics state (M08 / RN-10)
+  const [viewingOccupancyEvent, setViewingOccupancyEvent] = useState<Event | null>(null);
 
   // Publication state feedback
   const [actionFeedback, setActionFeedback] = useState<{
@@ -208,7 +212,8 @@ export function OrganizerDashboardPage() {
       const error = err as ApiError;
       let msg = error.message;
       if (error.code === 'EVENT_WITHOUT_LOTS') {
-        msg = 'Não é possível publicar: o evento não possui nenhum lote cadastrado. Adicione pelo menos um lote antes de publicar (RN-01).';
+        msg =
+          'Não é possível publicar: o evento não possui nenhum lote cadastrado. Adicione pelo menos um lote antes de publicar (RN-01).';
       } else if (error.code === 'EVENT_IN_PAST') {
         msg = 'Não é possível publicar: o evento já iniciou ou ocorreu no passado (RN-01).';
       }
@@ -233,9 +238,9 @@ export function OrganizerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0b1726]">
-
       {/* Main Content */}
-      <main className="site-container py-10"><span className="eyebrow mb-3">SEU PALCO, SUAS POSSIBILIDADES</span>
+      <main className="site-container py-10">
+        <span className="eyebrow mb-3">SEU PALCO, SUAS POSSIBILIDADES</span>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-50">Gerenciamento de Eventos</h1>
@@ -253,7 +258,20 @@ export function OrganizerDashboardPage() {
           </button>
         </div>
 
-        <div className="dashboard-stats"><div><span>Eventos carregados</span><strong>{events.length}</strong></div><div><span>Publicados</span><strong>{events.filter((event) => event.status === 'PUBLISHED').length}</strong></div><div><span>Rascunhos</span><strong>{events.filter((event) => event.status === 'DRAFT').length}</strong></div></div>
+        <div className="dashboard-stats">
+          <div>
+            <span>Eventos carregados</span>
+            <strong>{events.length}</strong>
+          </div>
+          <div>
+            <span>Publicados</span>
+            <strong>{events.filter((event) => event.status === 'PUBLISHED').length}</strong>
+          </div>
+          <div>
+            <span>Rascunhos</span>
+            <strong>{events.filter((event) => event.status === 'DRAFT').length}</strong>
+          </div>
+        </div>
         {actionFeedback && (
           <div
             className={`mb-6 p-4 rounded-xl border text-sm flex justify-between items-center ${
@@ -330,12 +348,14 @@ export function OrganizerDashboardPage() {
                                 : 'bg-red-950 text-red-300'
                           }`}
                         >
-                          {{ PUBLISHED: 'Publicado', DRAFT: 'Rascunho', CANCELLED: 'Cancelado' }[event.status]}
+                          {
+                            { PUBLISHED: 'Publicado', DRAFT: 'Rascunho', CANCELLED: 'Cancelado' }[
+                              event.status
+                            ]
+                          }
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-300 font-mono">
-                        {event.capacity}
-                      </td>
+                      <td className="px-6 py-4 text-slate-300 font-mono">{event.capacity}</td>
                       <td className="px-6 py-4 text-slate-300 font-mono text-xs">
                         {formatDate(event.startsAt)}
                       </td>
@@ -369,6 +389,15 @@ export function OrganizerDashboardPage() {
                           className="px-2.5 py-1 text-xs font-semibold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 rounded border border-emerald-800 transition-colors"
                         >
                           Equipe
+                        </button>
+
+                        {/* Botão Estatísticas e Ocupação (M08 / RN-10) */}
+                        <button
+                          type="button"
+                          onClick={() => setViewingOccupancyEvent(event)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-amber-950/60 hover:bg-amber-900 text-amber-300 rounded border border-amber-800 transition-colors"
+                        >
+                          Métricas
                         </button>
 
                         <button
@@ -407,9 +436,14 @@ export function OrganizerDashboardPage() {
 
       {/* Modal de Gestão de Equipe (M07) */}
       {managingStaffEvent && (
-        <StaffModal
-          event={managingStaffEvent}
-          onClose={() => setManagingStaffEvent(null)}
+        <StaffModal event={managingStaffEvent} onClose={() => setManagingStaffEvent(null)} />
+      )}
+
+      {/* Modal de Estatísticas e Ocupação (M08 / RN-10) */}
+      {viewingOccupancyEvent && (
+        <OccupancyModal
+          event={viewingOccupancyEvent}
+          onClose={() => setViewingOccupancyEvent(null)}
         />
       )}
 
@@ -438,7 +472,9 @@ export function OrganizerDashboardPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-200 mb-1">Título do Evento *</label>
+                <label className="block font-semibold text-slate-200 mb-1">
+                  Título do Evento *
+                </label>
                 <input
                   type="text"
                   value={title}
@@ -452,7 +488,9 @@ export function OrganizerDashboardPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-200 mb-1">Descrição Completa *</label>
+                <label className="block font-semibold text-slate-200 mb-1">
+                  Descrição Completa *
+                </label>
                 <textarea
                   rows={3}
                   value={description}
@@ -461,7 +499,9 @@ export function OrganizerDashboardPage() {
                   className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.description && (
-                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.description}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">
+                    {formErrors.description}
+                  </span>
                 )}
               </div>
 
@@ -475,12 +515,16 @@ export function OrganizerDashboardPage() {
                   className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.location && (
-                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.location}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">
+                    {formErrors.location}
+                  </span>
                 )}
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-200 mb-1">Capacidade Total *</label>
+                <label className="block font-semibold text-slate-200 mb-1">
+                  Capacidade Total *
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -490,7 +534,9 @@ export function OrganizerDashboardPage() {
                   className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {formErrors.capacity && (
-                  <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.capacity}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 block">
+                    {formErrors.capacity}
+                  </span>
                 )}
               </div>
 
@@ -504,7 +550,9 @@ export function OrganizerDashboardPage() {
                     className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {formErrors.startsAt && (
-                    <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.startsAt}</span>
+                    <span className="text-red-400 text-[11px] mt-0.5 block">
+                      {formErrors.startsAt}
+                    </span>
                   )}
                 </div>
 
@@ -517,7 +565,9 @@ export function OrganizerDashboardPage() {
                     className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {formErrors.endsAt && (
-                    <span className="text-red-400 text-[11px] mt-0.5 block">{formErrors.endsAt}</span>
+                    <span className="text-red-400 text-[11px] mt-0.5 block">
+                      {formErrors.endsAt}
+                    </span>
                   )}
                 </div>
               </div>
@@ -527,7 +577,9 @@ export function OrganizerDashboardPage() {
                   <label className="block font-semibold text-slate-200 mb-1">Status</label>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as 'DRAFT' | 'PUBLISHED' | 'CANCELLED')}
+                    onChange={(e) =>
+                      setStatus(e.target.value as 'DRAFT' | 'PUBLISHED' | 'CANCELLED')
+                    }
                     className="w-full px-3 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="DRAFT">DRAFT (Rascunho)</option>
@@ -550,7 +602,11 @@ export function OrganizerDashboardPage() {
                   disabled={isSubmitting}
                   className="px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Salvando...' : editingEvent ? 'Salvar Alterações' : 'Criar Evento'}
+                  {isSubmitting
+                    ? 'Salvando...'
+                    : editingEvent
+                      ? 'Salvar Alterações'
+                      : 'Criar Evento'}
                 </button>
               </div>
             </form>
