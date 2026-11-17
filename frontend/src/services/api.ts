@@ -39,6 +39,7 @@ api.interceptors.response.use(
       404: 'Recurso não encontrado.',
       409: 'Conflito de dados. Este e-mail já pode estar em uso.',
       422: 'Erro de validação de regra de negócio.',
+      429: 'Muitas requisições. Por favor, aguarde alguns instantes e tente novamente.',
       500: 'Erro interno no servidor. Tente novamente mais tarde.',
     };
 

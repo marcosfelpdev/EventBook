@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { healthRouter } from './routes/health.route.js';
 import { authRouter } from './routes/auth.route.js';
 import { eventsRouter } from './routes/events.route.js';
@@ -12,7 +13,31 @@ import { errorHandler } from './middlewares/error.middleware.js';
 
 export const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  }),
+);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Permite requisições sem origin (mobile, curl, healthcheck, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('CORS_NOT_ALLOWED'));
+    },
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
 app.get('/', (_req, res) => {
