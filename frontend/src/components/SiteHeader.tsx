@@ -15,6 +15,7 @@ export function SiteHeader() {
         <Brand />
         <nav className="desktop-nav" aria-label="Navegação principal">
           <NavLink to="/events">Explorar eventos</NavLink>
+          {isAuthenticated && <NavLink to="/my-tickets">Meus Ingressos</NavLink>}
           <Link to={organizer ? '/dashboard' : '/login'}>
             Área do organizador <ArrowUpRight size={14} />
           </Link>
@@ -58,6 +59,11 @@ export function SiteHeader() {
           <Link onClick={() => setOpen(false)} to="/events">
             Explorar eventos
           </Link>
+          {isAuthenticated && (
+            <Link onClick={() => setOpen(false)} to="/my-tickets">
+              Meus Ingressos
+            </Link>
+          )}
           <Link onClick={() => setOpen(false)} to={organizer ? '/dashboard' : '/login'}>
             Área do organizador
           </Link>

@@ -1,12 +1,17 @@
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../errors/app-error.js';
-import type { CreateOrderInput } from '../schemas/orders.schema.js';
+import type { CreateOrderInput, CheckoutInput } from '../schemas/orders.schema.js';
 
 export const RESERVATION_DURATION_MS = 15 * 60 * 1000;
+export const CANCELLATION_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 export async function getOrder(id: number, userId: number) {
-  const owned = await prisma.order.findFirst({ where: { id, userId }, include: { items: true } });
+  const owned = await prisma.order.findFirst({
+    where: { id, userId },
+    include: { items: true, tickets: true },
+  });
   if (!owned) {
     throw new AppError(404, 'NOT_FOUND', 'Pedido não encontrado.');
   }
@@ -14,24 +19,209 @@ export async function getOrder(id: number, userId: number) {
     where: { id, userId, status: 'PENDING', expiresAt: { lte: new Date() } },
     data: { status: 'EXPIRED' },
   });
-  return prisma.order.findFirstOrThrow({ where: { id, userId }, include: { items: true } });
+  return prisma.order.findFirstOrThrow({
+    where: { id, userId },
+    include: { items: true, tickets: true },
+  });
 }
 
-export async function cancelOrder(id: number, userId: number) {
-  await getOrder(id, userId);
-  const now = new Date();
-  const result = await prisma.order.updateMany({
-    where: { id, userId, status: 'PENDING', expiresAt: { gt: now } },
-    data: { status: 'CANCELLED', cancelledAt: now },
-  });
+export async function cancelOrder(id: number, userId: number, clock = () => new Date()) {
   const order = await getOrder(id, userId);
-  if (result.count === 1 || order.status === 'CANCELLED') {
+  const now = clock();
+
+  if (order.status === 'CANCELLED') {
     return order;
   }
+
   if (order.status === 'EXPIRED') {
     throw new AppError(422, 'ORDER_EXPIRED', 'A reserva deste pedido expirou.');
   }
-  throw new AppError(409, 'ORDER_ALREADY_PAID', 'Pedidos pagos não podem ser cancelados por esta operação.');
+
+  if (order.status === 'PENDING') {
+    const result = await prisma.order.updateMany({
+      where: { id, userId, status: 'PENDING', expiresAt: { gt: now } },
+      data: { status: 'CANCELLED', cancelledAt: now },
+    });
+    const updated = await getOrder(id, userId);
+    if (result.count === 1 || updated.status === 'CANCELLED') {
+      return updated;
+    }
+    throw new AppError(422, 'ORDER_EXPIRED', 'A reserva deste pedido expirou.');
+  }
+
+  if (order.status === 'PAID') {
+    // RN-06: Bloquear cancelamento com menos de 12 horas do evento
+    const orderWithEvent = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            lot: {
+              include: {
+                event: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const event = orderWithEvent?.items[0]?.lot?.event;
+    if (event) {
+      const eventStart = new Date(event.startsAt);
+      const diffMs = eventStart.getTime() - now.getTime();
+
+      if (diffMs < CANCELLATION_WINDOW_MS) {
+        throw new AppError(
+          422,
+          'CANCELLATION_WINDOW_CLOSED',
+          'O cancelamento não é permitido a menos de 12 horas do evento.',
+        );
+      }
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.ticket.updateMany({
+        where: { orderId: id },
+        data: { status: 'CANCELLED' },
+      });
+
+      return tx.order.update({
+        where: { id },
+        data: { status: 'CANCELLED', cancelledAt: now },
+        include: { items: true, tickets: true },
+      });
+    });
+  }
+
+  return order;
+}
+
+export async function checkoutOrder(
+  id: number,
+  userId: number,
+  input?: CheckoutInput,
+  clock = () => new Date(),
+) {
+  return prisma.$transaction(
+    async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              lot: {
+                include: {
+                  event: true,
+                },
+              },
+            },
+          },
+          tickets: true,
+        },
+      });
+
+      if (!order || order.userId !== userId) {
+        throw new AppError(404, 'NOT_FOUND', 'Pedido não encontrado.');
+      }
+
+      if (order.status === 'PAID') {
+        throw new AppError(409, 'ORDER_ALREADY_PAID', 'Este pedido já foi pago.');
+      }
+
+      if (order.status === 'CANCELLED') {
+        throw new AppError(422, 'ORDER_CANCELLED', 'Este pedido foi cancelado.');
+      }
+
+      const now = clock();
+      if (order.status === 'EXPIRED' || order.expiresAt <= now) {
+        if (order.status !== 'EXPIRED') {
+          await tx.order.update({
+            where: { id },
+            data: { status: 'EXPIRED' },
+          });
+        }
+        throw new AppError(422, 'ORDER_EXPIRED', 'A reserva deste pedido expirou.');
+      }
+
+      // Simulação do gateway de pagamento (injetável para testes)
+      if (input?.simulateFailure) {
+        throw new AppError(402, 'PAYMENT_FAILED', 'Falha no processamento do pagamento simulado.');
+      }
+
+      // Geração atômica dos ingressos com código único (RN-05)
+      const ticketsData = [];
+      for (const item of order.items) {
+        for (let i = 0; i < item.quantity; i++) {
+          const uniquePart = randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+          const code = `TKT-${order.id}-${item.lotId}-${uniquePart}`;
+          ticketsData.push({
+            orderId: order.id,
+            lotId: item.lotId,
+            eventId: item.lot.eventId,
+            code,
+            status: 'VALID' as const,
+            createdAt: now,
+          });
+        }
+      }
+
+      if (ticketsData.length > 0) {
+        await tx.ticket.createMany({
+          data: ticketsData,
+        });
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          status: 'PAID',
+          paidAt: now,
+        },
+        include: {
+          items: true,
+          tickets: true,
+        },
+      });
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      maxWait: 10000,
+      timeout: 15000,
+    },
+  );
+}
+
+export async function listMyOrders(
+  userId: number,
+  { page = 1, pageSize = 20 }: { page?: number; pageSize?: number } = {},
+) {
+  const skip = (page - 1) * pageSize;
+  const [data, total] = await Promise.all([
+    prisma.order.findMany({
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            lot: {
+              include: {
+                event: {
+                  select: { id: true, title: true, startsAt: true, endsAt: true, location: true },
+                },
+              },
+            },
+          },
+        },
+        tickets: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    prisma.order.count({ where: { userId } }),
+  ]);
+
+  return { data, page, pageSize, total };
 }
 
 export function expireOrders(
