@@ -7,6 +7,30 @@ export interface Ticket {
   orderId: number;
   createdAt: string;
   usedAt?: string | null;
+  lot?: {
+    id: number;
+    name: string;
+    price: string | number;
+  };
+  event?: {
+    id: number;
+    title: string;
+    description: string;
+    location: string;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+  };
+  order?: {
+    id: number;
+    status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+    createdAt: string;
+    paidAt?: string | null;
+  };
+  checkin?: {
+    id: number;
+    checkedInAt: string;
+  } | null;
 }
 
 export interface Checkin {

@@ -1,10 +1,15 @@
 import type { RequestHandler } from 'express';
 import * as ordersService from '../services/orders.service.js';
+import { listOrdersQuerySchema } from '../schemas/orders.schema.js';
 import { AppError } from '../errors/app-error.js';
 
 function parseOrderId(value: unknown) {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value) || Number(value) > 2147483647) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'O identificador do pedido deve ser um inteiro positivo.');
+    throw new AppError(
+      400,
+      'VALIDATION_ERROR',
+      'O identificador do pedido deve ser um inteiro positivo.',
+    );
   }
   return Number(value);
 }
@@ -22,4 +27,19 @@ export const cancelOrder: RequestHandler = async (req, res) => {
 export const createOrder: RequestHandler = async (req, res) => {
   const order = await ordersService.createOrder(req.user!.id, req.body);
   res.status(201).json(order);
+};
+
+export const checkoutOrder: RequestHandler = async (req, res) => {
+  const order = await ordersService.checkoutOrder(
+    parseOrderId(req.params.id),
+    req.user!.id,
+    req.body,
+  );
+  res.status(200).json(order);
+};
+
+export const listMyOrders: RequestHandler = async (req, res) => {
+  const query = listOrdersQuerySchema.parse(req.query);
+  const result = await ordersService.listMyOrders(req.user!.id, query);
+  res.status(200).json(result);
 };

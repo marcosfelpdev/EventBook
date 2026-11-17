@@ -7,6 +7,7 @@ import { EventsPage } from './pages/EventsPage';
 import { EventDetailPage } from './pages/EventDetailPage';
 import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { StaffCheckinPage } from './pages/StaffCheckinPage';
+import { MyTicketsPage } from './pages/MyTicketsPage';
 import { ROLES } from './types/auth';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteFooter } from './components/SiteFooter';
@@ -37,6 +38,15 @@ export function App() {
             element={
               <PrivateRoute allowedRoles={[ROLES.STAFF, ROLES.ADMIN]}>
                 <StaffCheckinPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/my-tickets"
+            element={
+              <PrivateRoute>
+                <MyTicketsPage />
               </PrivateRoute>
             }
           />
