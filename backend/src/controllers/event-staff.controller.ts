@@ -11,9 +11,8 @@ function parseId(value: unknown, fieldName: string) {
 export const addStaff: RequestHandler = async (req, res) => {
   const eventId = parseId(req.params.eventId, 'evento');
   const organizerId = req.user!.id;
-  const { userId } = req.body;
 
-  const eventStaff = await eventStaffService.addStaffToEvent(eventId, organizerId, userId);
+  const eventStaff = await eventStaffService.addStaffToEvent(eventId, organizerId, req.body);
   res.status(201).json(eventStaff);
 };
 

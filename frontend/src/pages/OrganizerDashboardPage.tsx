@@ -7,6 +7,7 @@ import { Loading } from '../components/Loading';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
 import { LotsModal } from '../components/LotsModal';
+import { StaffModal } from '../components/StaffModal';
 
 export function OrganizerDashboardPage() {
   const navigate = useNavigate();
@@ -33,6 +34,9 @@ export function OrganizerDashboardPage() {
 
   // Lots management state
   const [managingLotsEvent, setManagingLotsEvent] = useState<Event | null>(null);
+
+  // Staff management state
+  const [managingStaffEvent, setManagingStaffEvent] = useState<Event | null>(null);
 
   // Publication state feedback
   const [actionFeedback, setActionFeedback] = useState<{
@@ -358,6 +362,15 @@ export function OrganizerDashboardPage() {
                           Lotes
                         </button>
 
+                        {/* Botão Gerenciar Equipe */}
+                        <button
+                          type="button"
+                          onClick={() => setManagingStaffEvent(event)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 rounded border border-emerald-800 transition-colors"
+                        >
+                          Equipe
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => openEditModal(event)}
@@ -389,6 +402,14 @@ export function OrganizerDashboardPage() {
           event={managingLotsEvent}
           onClose={() => setManagingLotsEvent(null)}
           onLotsChanged={() => setReloadCounter((c) => c + 1)}
+        />
+      )}
+
+      {/* Modal de Gestão de Equipe (M07) */}
+      {managingStaffEvent && (
+        <StaffModal
+          event={managingStaffEvent}
+          onClose={() => setManagingStaffEvent(null)}
         />
       )}
 

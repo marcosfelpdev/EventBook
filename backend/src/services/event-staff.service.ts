@@ -8,7 +8,7 @@ import { AppError } from '../errors/app-error.js';
 export async function addStaffToEvent(
   eventId: number,
   organizerId: number,
-  userId: number,
+  input: { userId?: number; email?: string } | number,
 ) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) {
@@ -24,8 +24,16 @@ export async function addStaffToEvent(
     );
   }
 
-  // O usuário deve existir e ter perfil STAFF
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const userId = typeof input === 'number' ? input : input.userId;
+  const email = typeof input === 'object' ? input.email : undefined;
+
+  let user = null;
+  if (userId) {
+    user = await prisma.user.findUnique({ where: { id: userId } });
+  } else if (email) {
+    user = await prisma.user.findUnique({ where: { email } });
+  }
+
   if (!user) {
     throw new AppError(404, 'NOT_FOUND', 'Usuário não encontrado.');
   }
@@ -37,12 +45,28 @@ export async function addStaffToEvent(
     );
   }
 
-  const eventStaff = await prisma.eventStaff.create({
-    data: { eventId, userId },
-    include: { user: { select: { id: true, name: true, email: true } } },
-  });
+  try {
+    const eventStaff = await prisma.eventStaff.create({
+      data: { eventId, userId: user.id },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
 
-  return eventStaff;
+    return eventStaff;
+  } catch (err) {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'code' in err &&
+      (err as { code: string }).code === 'P2002'
+    ) {
+      throw new AppError(
+        409,
+        'STAFF_ALREADY_EXISTS',
+        'Este usuário já faz parte da equipe deste evento.',
+      );
+    }
+    throw err;
+  }
 }
 
 /**
