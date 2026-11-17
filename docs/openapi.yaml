@@ -1,0 +1,627 @@
+openapi: 3.0.3
+info:
+  title: EventBook API
+  description: >
+    API REST para a plataforma EventBook, garantindo consistência transacional,
+    controle de estoque concorrente, checkout atômico, emissão e check-in de ingressos.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3333
+    description: Servidor de Desenvolvimento Local
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INVALID_CREDENTIALS
+        message:
+          type: string
+          example: Credenciais inválidas.
+        details:
+          type: object
+          description: Detalhes adicionais de validação quando aplicável.
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Maria Silva
+        email:
+          type: string
+          format: email
+          example: maria@example.com
+        role:
+          type: string
+          enum: [ADMIN, ORGANIZER, STAFF, BUYER]
+          example: BUYER
+        createdAt:
+          type: string
+          format: date-time
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        organizerId:
+          type: integer
+          example: 2
+        title:
+          type: string
+          example: Festival de Música 2026
+        description:
+          type: string
+          example: Festival com bandas internacionais e nacionais.
+        location:
+          type: string
+          example: Arena Anhembi - São Paulo, SP
+        capacity:
+          type: integer
+          example: 5000
+        startsAt:
+          type: string
+          format: date-time
+          example: "2026-12-01T20:00:00.000Z"
+        endsAt:
+          type: string
+          format: date-time
+          example: "2026-12-02T04:00:00.000Z"
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, CANCELLED]
+          example: PUBLISHED
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TicketLot:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        eventId:
+          type: integer
+          example: 10
+        name:
+          type: string
+          example: 1º Lote Pista
+        price:
+          type: number
+          format: float
+          example: 150.00
+        quantity:
+          type: integer
+          example: 500
+        active:
+          type: boolean
+          example: true
+        salesStartAt:
+          type: string
+          format: date-time
+        salesEndAt:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 100
+        userId:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [PENDING, PAID, CANCELLED, EXPIRED]
+          example: PAID
+        total:
+          type: number
+          format: float
+          example: 300.00
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              orderId:
+                type: integer
+              lotId:
+                type: integer
+              quantity:
+                type: integer
+              unitPriceSnapshot:
+                type: number
+                format: float
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        code:
+          type: string
+          example: EB-A1B2C3D4-E5F6
+        status:
+          type: string
+          enum: [VALID, USED, CANCELLED]
+          example: VALID
+        orderId:
+          type: integer
+        lotId:
+          type: integer
+        eventId:
+          type: integer
+        usedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+paths:
+  /health:
+    get:
+      summary: Healthcheck da aplicação
+      description: Verifica disponibilidade e conectividade do serviço.
+      responses:
+        "200":
+          description: API saudável e conectada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /register:
+    post:
+      summary: Cadastro de novo usuário
+      description: Registra um usuário na plataforma (por padrão com perfil BUYER).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: Maria Silva
+                email:
+                  type: string
+                  format: email
+                  example: maria@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: segredo123
+                role:
+                  type: string
+                  enum: [BUYER, ORGANIZER, STAFF]
+      responses:
+        "201":
+          description: Usuário cadastrado com sucesso.
+        "400":
+          description: Dados de entrada inválidos.
+        "409":
+          description: E-mail já cadastrado.
+        "429":
+          description: Limite de requisições excedido.
+
+  /login:
+    post:
+      summary: Autenticação de usuário
+      description: Autentica credenciais e retorna Token JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: maria@example.com
+                password:
+                  type: string
+                  example: segredo123
+      responses:
+        "200":
+          description: Login bem-sucedido.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI...
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Credenciais inválidas.
+        "429":
+          description: Limite de requisições excedido.
+
+  /me:
+    get:
+      summary: Dados do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dados do perfil autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Não autenticado.
+
+  /events:
+    get:
+      summary: Listagem pública de eventos
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista paginada de eventos.
+    post:
+      summary: Criação de evento
+      security:
+        - bearerAuth: []
+      description: Permitido apenas para ORGANIZER ou ADMIN.
+      responses:
+        "201":
+          description: Evento criado como DRAFT.
+        "401":
+          description: Não autenticado.
+        "403":
+          description: Sem permissão.
+
+  /events/{id}:
+    get:
+      summary: Detalhes do evento
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalhes do evento e lotes.
+        "404":
+          description: Evento não encontrado.
+    put:
+      summary: Atualização do evento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Evento atualizado.
+        "403":
+          description: Não autorizado a editar este evento.
+
+  /events/{id}/publish:
+    patch:
+      summary: Publicação do evento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Evento publicado com sucesso.
+        "422":
+          description: Evento não possui lotes válidos ou regras violadas.
+
+  /events/{id}/occupancy:
+    get:
+      summary: Métricas de ocupação e receita em tempo real (RN-10)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Métricas agregadas de ingressos vendidos, reservados, ocupação e receita total.
+        "403":
+          description: Usuário não é o organizador nem administrador do evento.
+
+  /events/{id}/staff:
+    get:
+      summary: Listar membros da equipe de staff do evento (RN-07)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de membros da equipe vinculados ao evento.
+    post:
+      summary: Adicionar membro à equipe de staff do evento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "201":
+          description: Membro vinculado à equipe com sucesso.
+        "404":
+          description: Usuário não encontrado.
+        "409":
+          description: Usuário já faz parte da equipe.
+
+  /events/{id}/staff/{userId}:
+    delete:
+      summary: Remover membro da equipe de staff do evento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Membro desvinculado com sucesso.
+
+  /events/{id}/lots:
+    get:
+      summary: Lotes de ingressos do evento
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de lotes disponíveis.
+    post:
+      summary: Criar lote de ingressos
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Lote criado com sucesso.
+
+  /orders:
+    post:
+      summary: Criar reserva de ingressos (RN-02, RN-03, RN-04, RN-09)
+      security:
+        - bearerAuth: []
+      description: Reserva temporária por 15 minutos com lock pessimista no MySQL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lotId, quantity]
+              properties:
+                lotId:
+                  type: integer
+                  example: 5
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        "201":
+          description: Pedido criado com status PENDING e prazo de 15 minutos.
+        "409":
+          description: Estoque insuficiente no lote.
+        "422":
+          description: Lote fora da janela de vendas ou inativo.
+
+  /orders/{id}/checkout:
+    post:
+      summary: Checkout atômico e emissão de ingressos (RN-05)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentMethod:
+                  type: string
+                  enum: [CREDIT_CARD, PIX, BOLETO]
+                  default: CREDIT_CARD
+                simulateFailure:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: Pagamento aprovado, pedido marcado como PAID e ingressos gerados.
+        "400":
+          description: Falha na transação ou erro de simulação de pagamento.
+        "409":
+          description: Pedido já pago ou expirado.
+
+  /orders/{id}/cancel:
+    post:
+      summary: Cancelamento de pedido (RN-06)
+      security:
+        - bearerAuth: []
+      description: >
+        Cancela reserva ou pedido pago. Pedidos pagos só podem ser cancelados
+        se o evento iniciar em 12 horas ou mais. Ingressos são invalidados e estoque devolvido.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pedido cancelado com sucesso.
+        "422":
+          description: Prazo limite de cancelamento atingido (menos de 12 horas para o evento).
+
+  /tickets/me:
+    get:
+      summary: Meus ingressos
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Ingressos do usuário autenticado.
+
+  /tickets/{code}:
+    get:
+      summary: Consulta de ingresso por código
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detalhes do ingresso.
+        "404":
+          description: Ingresso não encontrado.
+
+  /tickets/{code}/checkin:
+    post:
+      summary: Realizar check-in de ingresso (RN-07, RN-08)
+      security:
+        - bearerAuth: []
+      description: >
+        Validação do ingresso na entrada do evento. Restrito a membros da equipe
+        do evento (STAFF) ou organizador/admin. Garante uso único do ingresso.
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            example: EB-A1B2C3D4-E5F6
+      responses:
+        "200":
+          description: Check-in realizado com sucesso. Ingresso marcado como USED.
+        "403":
+          description: Usuário não tem permissão para realizar check-in neste evento.
+        "404":
+          description: Ingresso não encontrado.
+        "409":
+          description: Ingresso já foi utilizado anteriormente (duplicidade).
+        "422":
+          description: Ingresso cancelado ou fora da janela permitida.
